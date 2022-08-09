@@ -1,0 +1,4 @@
+earthengine-api
+openet-ssebop
+gdal
+rasterstats
