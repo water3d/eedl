@@ -11,8 +11,8 @@ OK, so, here's the plan
 Current status is that we have pieces to:
 * Run the Earth Engine code and export rasters to Google Drive
 * Detect if the raster export is complete
-* [Still in progress] Download the data from Google Drive (or GCloud)
+* [Testing] Download the data from Google Drive (or GCloud)
 * Mosaic the raster pieces together into a single raster, with overviews
-* [Still in progress] Run zonal statistics on the output
+* [Testing] Run zonal statistics on the output
 
 Documentation, docstrings, test, etc are all still missing
