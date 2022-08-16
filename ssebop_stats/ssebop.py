@@ -162,9 +162,10 @@ class SSEBOPer(object):
 		self.description = f"{self.pixel_reducer}ET_{self.year}-{self.start_date}--{self.end_date}_{filename_prefix}"
 		self.filename = f"et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
 
-	def export(self, filename_prefix=""):
+	def export(self, filename_prefix="", **export_kwargs):
 		self._set_names(filename_prefix)
-		self.task = ee.batch.Export.image.toDrive(self.results, **{
+
+		ee_kwargs = {
 			'description': self.description,
 			'folder': self.export_folder,
 			'fileNamePrefix': self.filename,
@@ -172,7 +173,10 @@ class SSEBOPer(object):
 			'maxPixels': 1e12,
 			'fileDimensions': self.tile_size,  # multiple of shardSize default 256. Should split into about 9 tiles
 			'crs': self.crs
-		})
+		}
+		ee_kwargs.update(export_kwargs)  # override any of these defaults with anything else provided
+
+		self.task = ee.batch.Export.image.toDrive(self.results, **ee_kwargs)
 
 		self.task.start()
 
