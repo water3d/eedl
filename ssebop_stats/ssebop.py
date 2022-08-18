@@ -57,6 +57,17 @@ def _get_fiona_args(polygon_path):
 		return {'fp': polygon_path}
 
 
+def download_images_in_folder(source_location, download_location, prefix):
+	folder_search_path = source_location
+	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
+
+	os.makedirs(download_location, exist_ok=True)
+
+	for filename in files:
+		shutil.move(os.path.join(folder_search_path, filename), os.path.join(download_location, filename))
+
+
+
 class TaskRegistry(object):
 	INCOMPLETE_STATUSES = ("READY", "UNSUBMITTED", "RUNNING")
 	COMPLETE_STATUSES = ["COMPLETED"]
@@ -147,8 +158,8 @@ class SSEBOPer(object):
 		self.start_date = start_date1
 		self.end_date = end_date2
 
-		image1 = self._run_ssebop(start_date1, end_date1, self.pixel_reducer)
-		image2 = self._run_ssebop(start_date2, end_date2, self.pixel_reducer)
+		image1 = self._run_ssebop(start_date1, end_date1, "min")
+		image2 = self._run_ssebop(start_date2, end_date2, "max")
 
 		# get the comparison function - e.g. image.subtract, image.divide
 		compare_func = getattr(image2, method)
@@ -196,14 +207,8 @@ class SSEBOPer(object):
 		# "RUNNING", "UNSUBMITTED"
 
 		folder_search_path = os.path.join(self.drive_root_folder, self.export_folder)
-		files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(self.filename) ]
-
 		self.output_folder = os.path.join(download_location, self.export_folder)
-		os.makedirs(os.path.join(download_location, self.export_folder), exist_ok=True)
-
-		for filename in files:
-			print(filename)
-			shutil.move(os.path.join(folder_search_path, filename), os.path.join(self.output_folder, filename))
+		download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		self.task_data_downloaded = True
 
