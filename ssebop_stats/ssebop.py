@@ -10,6 +10,7 @@ import rasterstats
 import fiona
 
 from . import mosaic_rasters
+from . import google_cloud
 
 try:
 	ee.Initialize()
@@ -34,6 +35,7 @@ DEFAULTS = dict(
 	CRS='EPSG:3310',
 	# STUDY_AREA = ee.Geometry({"type": "Polygon", "coordinates":[ [ [ -121.836, 36.8706 ], [ -121.824151, 36.912247 ], [ -121.815, 36.9452 ], [ -121.814784, 36.945169 ], [ -121.489582, 38.08815 ], [ -122.973, 38.3039 ], [ -122.951223, 38.378287 ], [ -122.616922, 39.520217 ], [ -124.098837, 39.735876 ], [ -124.099, 39.7359 ], [ -124.093234, 39.754971 ], [ -124.076528, 39.810231 ], [ -123.666485, 41.166525 ], [ -123.650629, 41.218972 ], [ -123.644, 41.2409 ], [ -123.643785, 41.240869 ], [ -121.485, 40.9267 ], [ -121.502496, 40.874376 ], [ -121.889549, 39.716847 ], [ -120.416212, 39.502531 ], [ -120.416, 39.5025 ], [ -120.806849, 38.291111 ], [ -119.332, 38.0766 ], [ -119.355163, 38.002424 ], [ -119.7107, 36.863872 ], [ -118.233, 36.649 ], [ -118.239331, 36.628081 ], [ -118.684336, 35.157609 ], [ -118.688, 35.1455 ], [ -120.167913, 35.360572 ], [ -120.229336, 35.157609 ], [ -120.233, 35.1455 ], [ -122.233187, 35.436182 ], [ -122.234, 35.4363 ], [ -121.835726, 36.87056 ], [ -121.836, 36.8706 ] ] ]}),
 	STUDY_AREA=ee.FeatureCollection("projects/ucm-fallow-training/assets/central_valley_alluvial_boundary").geometry(),
+	TEST_STUDY_AREA=ee.Geometry({"type": "Polygon", "coordinates":[ [ [ -121.836, 36.8706 ], [-121.9, 36.8706], [-121.9, 36.9], [-121.836, 36.9], [ -121.836, 36.8706 ] ] ]}),
 	TILE_SIZE=12800,
 	COLLECTIONS=['LANDSAT/LC08/C02/T1_L2'],
 	PIXEL_REDUCER="max",
@@ -58,6 +60,13 @@ def _get_fiona_args(polygon_path):
 
 
 def download_images_in_folder(source_location, download_location, prefix):
+	"""
+		Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
+	:param source_location:
+	:param download_location:
+	:param prefix:
+	:return:
+	"""
 	folder_search_path = source_location
 	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
 
@@ -75,6 +84,7 @@ class TaskRegistry(object):
 
 	def __init__(self):
 		self.images = []
+		self.callback = None
 
 	def add(self, image):
 		self.images.append(image)
@@ -98,11 +108,20 @@ class TaskRegistry(object):
 	def download_ready_images(self, download_location):
 		for image in self.downloadable_tasks:
 			print(f"{image.filename} is ready for download")
-			image.download_results(download_location=download_location)
+			image.download_results(download_location=download_location, callback=self.callback)
 
-	def wait_for_images(self, download_location, sleep_time=10):
+	def wait_for_images(self, download_location, sleep_time=10, callback=None, try_again_disk_full=True):
+		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
-			self.download_ready_images(download_location)
+			try:
+				self.download_ready_images(download_location)
+			except OSError:
+				if try_again_disk_full:
+					print("OSError reported. Disk may be full - will try again - clear space")
+					pass
+				else:
+					raise
+
 			time.sleep(sleep_time)
 
 
@@ -115,6 +134,7 @@ class SSEBOPer(object):
 
 		self._last_task_status = {"state": "UNSUBMITTED"}
 		self.task_data_downloaded = False
+		self.export_type = "Drive"  # other option is "Cloud"
 
 		self.drive_root_folder = drive_root_folder
 
@@ -171,14 +191,13 @@ class SSEBOPer(object):
 
 	def _set_names(self, filename_prefix=""):
 		self.description = f"{self.pixel_reducer}ET_{self.year}-{self.start_date}--{self.end_date}_{filename_prefix}"
-		self.filename = f"et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
+		self.filename = f"{self.pixel_reducer}_et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
 
-	def export(self, filename_prefix="", **export_kwargs):
+	def export(self, filename_prefix="", export_type="Drive", **export_kwargs):
 		self._set_names(filename_prefix)
 
 		ee_kwargs = {
 			'description': self.description,
-			'folder': self.export_folder,
 			'fileNamePrefix': self.filename,
 			'scale': 30,
 			'maxPixels': 1e12,
@@ -187,13 +206,23 @@ class SSEBOPer(object):
 		}
 		ee_kwargs.update(export_kwargs)  # override any of these defaults with anything else provided
 
-		self.task = ee.batch.Export.image.toDrive(self.results, **ee_kwargs)
+		if export_type == "Drive":
+			if "folder" not in ee_kwargs:
+				ee_kwargs['folder'] = self.export_folder
 
-		self.task.start()
+			self.task = ee.batch.Export.image.toDrive(self.results, **ee_kwargs)
+			self.task.start()
+		elif export_type == "Cloud":
+			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"  # add the folder to the filename here for Google Cloud
+			self.bucket = ee_kwargs['bucket']
+			self.task = ee.batch.Export.image.toCloudStorage(self.results, **ee_kwargs)
+			self.task.start()
+
+		self.export_type = export_type
 
 		main_task_registry.add(self)
 
-	def download_results(self, download_location):
+	def download_results(self, download_location, callback=None):
 		"""
 
 		:return:
@@ -208,15 +237,37 @@ class SSEBOPer(object):
 
 		folder_search_path = os.path.join(self.drive_root_folder, self.export_folder)
 		self.output_folder = os.path.join(download_location, self.export_folder)
-		download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
+
+		if self.export_type == "Drive":
+			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
+		elif self.export_type == "Cloud":
+			google_cloud.download_public_export(self.bucket, self.output_folder, f"{self.export_folder}/{self.filename}")
+		else:
+			raise ValueError("Unknown export_type (not one of 'Drive', 'Cloud') - can't download")
 
 		self.task_data_downloaded = True
 
+		if callback:
+			callback_func = getattr(self, callback)
+			callback_func()
+
 	def mosaic(self):
 		self.mosaic_image = os.path.join(self.output_folder, f"{self.filename}_mosaic.tif")
-		mosaic_rasters.mosaic_folder(self.output_folder, self.mosaic_image)
+		mosaic_rasters.mosaic_folder(self.output_folder, self.mosaic_image, prefix=self.filename)
 
-	def zonal_stats(self, polygons, keep_fields=("UniqueID", "CLASS2"), stats=('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_1', 'percentile_5', 'percentile_10', 'percentile_90', 'percentile_95', 'percentile_99')):
+	def zonal_stats(self, polygons, keep_fields=("UniqueID", "CLASS2"),
+					stats=('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
+					report_threshold=1000,
+					write_batch_size=2000):
+		"""
+
+		:param polygons:
+		:param keep_fields:
+		:param stats:
+		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000. Set to None to disable
+		:param write_batch_size: How many zones should we store up before writing to the disk?
+		:return:
+		"""
 		# note use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on the next line,
 		# each item isn't evaluated, which should prevent us from needing to store a geojson representation of all of the polygons
 		# at one time since we'll strip it off (it'd be reallllly bad to try to keep all of it
@@ -240,12 +291,26 @@ class SSEBOPer(object):
 			# dictionary just for the keys we want to keep - the keep fields (the key and a class field by defaiult) and the stats fields
 			#zstats_results = [{key: poly['properties'][key] for key in fieldnames} for poly in zstats_results_geo]
 
-			with open(os.path.join(self.output_folder, f"{self.filename}_zstats.csv"), 'wb') as csv_file:
+			i = 0
+			with open(os.path.join(self.output_folder, f"{self.filename}_zstats.csv"), 'w', newline='') as csv_file:
 				writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 				writer.writeheader()
+				results = []
 				for poly in zstats_results_geo:  # get the result for the polygon, then filter the keys with the dictionary comprehension below
 					result = {key: poly['properties'][key] for key in fieldnames}
-					writer.writerow(result)  # then write the lone result out one at a time to not store it all in RAM
+
+					for key in result:  # truncate the floats
+						if type(result[key]) is float:
+							result[key] = f"{result[key]:.5f}"
+
+					i += 1
+					results.append(result)
+					if i % write_batch_size == 0:
+						writer.writerows(results)  # then write the lone result out one at a time to not store it all in RAM
+						results = []
+
+					if report_threshold and i % report_threshold == 0:
+						print(i)
 
 	def _check_task_status(self):
 		new_status = self.task.status()
@@ -257,30 +322,3 @@ class SSEBOPer(object):
 
 		return {'status': self._last_task_status, 'changed': changed}
 
-# for testing
-if __name__ == "__main__":
-	#tester = SSEBOPer()
-
-	images = []
-
-	#for year in (2020, 2021, 2022):
-	#	for month in (("05-01", "05-31"), ("06-01", "06-30"), ("07-01", "07-31"), ("08-01", "08-31")):
-	#		if not (year == 2022 and month[0] == "08-01"):  # skip august for now in 2022
-	#			runner = SSEBOPer()
-	#			runner.run(year, month[0], month[1])
-	#			runner.export()
-	#			images.append(runner)
-
-	runner = SSEBOPer()
-	runner.run(2022, "07-01", "07-31")
-	runner.export()
-	images.append(runner)
-
-	main_task_registry.wait_for_images(download_location=r"D:\ET_Summers\ee_exports_monthly", sleep_time=60)
-
-	for image in images:
-		image.mosaic()
-		#image.zonal_stats()
-
-	#tester.export()
-	#tester.download_results()

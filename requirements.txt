@@ -2,3 +2,4 @@ earthengine-api
 openet-ssebop
 gdal
 rasterstats
+google-cloud-storage

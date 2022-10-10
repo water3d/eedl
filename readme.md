@@ -8,14 +8,8 @@ OK, so, here's the plan
 3. Mosaicks the data using GDAL and exports a version with overviews/pyramids
 4. Runs zonal stats if we have LandIQ data for the relevant year
 
-Current status is that we have pieces to:
-* Run the Earth Engine code and export rasters to Google Drive
-* Detect if the raster export is complete
-* [Testing] Download the data from Google Drive (or GCloud)
-* Mosaic the raster pieces together into a single raster, with overviews
-* [Testing] Run zonal statistics on the output
-
-Documentation, docstrings, test, etc are all still missing
+Documentation, docstrings, test, etc are all still missing. This is, currently, not meant to be a production quality
+library for usage by others, but a tool for rapid development and usage of SSEBOP data in my own code.
 
 # Example Usage
 The following example shows some of the places you can customize usage of this code, and how to use it.

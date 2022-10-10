@@ -11,7 +11,7 @@ class Image(object):
 	"""
 		Manages an image object so we can download and mosaic it
 
-		realistically, SSEBOPer should be refactored to use this, and the image registry in ssebop.py should work with this too
+		realistically, SSEBOPer should be refactored to basically be a subclass inheriting Image, and the image registry in ssebop.py should work with this too
 		but I'm not doing all of that right now. Start with this, then make those changes if we keep using this code base
 	"""
 	def __init__(self, image):

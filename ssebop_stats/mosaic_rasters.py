@@ -4,8 +4,8 @@ import tempfile
 from osgeo import gdal
 
 
-def mosaic_folder(folder_path, output_path):
-	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif")]
+def mosaic_folder(folder_path, output_path, prefix=""):
+	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
 	mosaic_rasters(tifs, output_path)
 
 
@@ -16,6 +16,8 @@ def mosaic_rasters(raster_paths, output_path, add_overviews=True):
 	:param raster_paths:
 	:return:
 	"""
+
+	#gdal.SetConfigOption("GTIFF_SRC_SOURCE", "GEOKEYS")
 	vrt_path = tempfile.mktemp(suffix=".vrt", prefix="mosaic_rasters_")
 
 	vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest', resolution="highest")
