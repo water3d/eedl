@@ -1,5 +1,7 @@
 earthengine-api
 openet-ssebop
 gdal
+pandas
+seaborn>=0.12.0
 rasterstats
 google-cloud-storage

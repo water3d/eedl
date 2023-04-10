@@ -1,6 +1,6 @@
 OK, so, here's the plan
 
-1. Develop SSEBOP function that does monthlies/seasonal exports to Google Cloud
+1. Develop SSEBop function that does monthlies/seasonal exports to Google Cloud
 2. A second function that downloads all the data from GCloud for a given monthly/seasonal
    1. Honestly, it might be easier to still just export to Google Drive and then require
    that the user have Google Drive installed on the computer for now, and this will
