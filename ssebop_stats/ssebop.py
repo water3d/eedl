@@ -28,7 +28,7 @@ DEFAULTS = dict(
 	INTERP_DAYS=32,
 	# Interpolation method - currently only LINEAR is supported
 	INTERP_METHOD='LINEAR',
-	CLOUD_COVER=50,
+	CLOUD_COVER=30,
 	ET_PALETTE=[
 		'DEC29B', 'E6CDA1', 'EDD9A6', 'F5E4A9', 'FFF4AD', 'C3E683', '6BCC5C',
 		'3BB369', '20998F', '1C8691', '16678A', '114982', '0B2C7A'],
@@ -166,7 +166,7 @@ class SSEBOPer(object):
 		# this will be a bit backward because we want to be able to select a different reducer later
 		et_collection = overpass_date_collection.select(['et'])
 		reducer = getattr(et_collection, pixel_reducer)  # get the function for the reducer
-		return reducer()  # call the reducer
+		return reducer()  # call the reducer and return the results
 
 	def comparison(self, year, time1_start, time1_end, time2_start, time2_end, method="divide"):
 		start_date1 = f'{year}-{time1_start}'
