@@ -26,7 +26,8 @@ def zonal_stats(polygons,
 				keep_fields=("UniqueID", "CLASS2"),
 				stats=('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 				report_threshold=1000,
-				write_batch_size=2000):
+				write_batch_size=2000,
+				**kwargs):
 	"""
 
 	TODO: Make this check if raster and polys are in the same CRS - if they're not, then rasterstats doesn't automatically align them and we just get bad output.
@@ -36,6 +37,7 @@ def zonal_stats(polygons,
 	:param stats:
 	:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000. Set to None to disable
 	:param write_batch_size: How many zones should we store up before writing to the disk?
+	:param kwargs: passed through to rasterstats
 	:return:
 	"""
 	# note use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on the next line,
@@ -50,7 +52,7 @@ def zonal_stats(polygons,
 	with fiona.open(main_file_path, **kwargs) as polys_open:
 
 		zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True,
-														 nodata=-9999)
+														 nodata=-9999, **kwargs)
 
 		fieldnames = stats + keep_fields
 

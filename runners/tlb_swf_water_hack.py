@@ -5,7 +5,7 @@ import ee
 
 images = []
 
-SKIP_EXPORT = False
+SKIP_EXPORT = True
 ZONAL_ONLY = False
 DOWNLOAD_LOCATION = r"D:\ET_TLB_SWF"
 
@@ -26,7 +26,7 @@ liq_mapping = {
 	2020: r"D:\LIQ\TLB\LIQ_TLB_3310.gdb\liq_2020_tlb_3310_filt",
 }
 
-for year in (2018,):  #, 2019, 2020):
+for year in (2020,): #, 2018, 2019, 2020):
 	for month in months:
 		runner = ssebop.SSEBOPer()
 		runner.year = year
@@ -34,8 +34,10 @@ for year in (2018,):  #, 2019, 2020):
 		runner.study_area = ee.FeatureCollection("users/nrsantos/tlb_boundary").geometry()
 		runner.run(year, month[0], month[1])
 
+		prefix = "swf_sseb_monthly_v2"
+
 		if SKIP_EXPORT:
-			runner._set_names("swf_sseb_monthly")
+			runner._set_names(prefix)
 			if not ZONAL_ONLY:
 				# when resuming where export succeeded, but download failed - this will set everything up correctly, and skip the export
 				runner.download_results(DOWNLOAD_LOCATION, callback="mosaic")
@@ -43,7 +45,7 @@ for year in (2018,):  #, 2019, 2020):
 				runner.output_folder = os.path.join(DOWNLOAD_LOCATION, runner.export_folder)
 				runner.mosaic_image = os.path.join(runner.output_folder, f"{runner.filename}_mosaic.tif")
 		else:
-			runner.export(filename_prefix="vw_ssebop_et_annuals")
+			runner.export(filename_prefix=prefix, clip=runner.study_area, skipEmptyTiles=True)
 
 		images.append(runner)
 

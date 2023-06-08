@@ -193,8 +193,11 @@ class SSEBOPer(object):
 		self.description = f"{self.pixel_reducer}ET_{self.year}-{self.start_date}--{self.end_date}_{filename_prefix}"
 		self.filename = f"{self.pixel_reducer}_et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
 
-	def export(self, filename_prefix="", export_type="Drive", **export_kwargs):
+	def export(self, filename_prefix="", export_type="Drive", clip=None, **export_kwargs):
 		self._set_names(filename_prefix)
+
+		if clip:  # clip must be a geometry or feature in Earth Engine.
+			self.results.clip(clip)
 
 		ee_kwargs = {
 			'description': self.description,
