@@ -5,7 +5,6 @@ import csv
 
 
 import ee
-import openet.ssebop as ssebop
 import rasterstats
 import fiona
 
@@ -20,29 +19,11 @@ except:  # not sure what error it raises right now
 
 
 DEFAULTS = dict(
-	ET_REFERENCE_SOURCE='projects/climate-engine/cimis/daily',
-	ET_REFERENCE_BAND='ETr_ASCE',
-	ET_REFERENCE_FACTOR=1.0,
-	ET_REFERENCE_RESAMPLE='nearest',
-	ET_REFERENCE_DATE_TYPE='daily',
-	INTERP_DAYS=32,
-	# Interpolation method - currently only LINEAR is supported
-	INTERP_METHOD='LINEAR',
-	CLOUD_COVER=30,
-	ET_PALETTE=[
-		'DEC29B', 'E6CDA1', 'EDD9A6', 'F5E4A9', 'FFF4AD', 'C3E683', '6BCC5C',
-		'3BB369', '20998F', '1C8691', '16678A', '114982', '0B2C7A'],
-	CRS='EPSG:3310',
-	# STUDY_AREA = ee.Geometry({"type": "Polygon", "coordinates":[ [ [ -121.836, 36.8706 ], [ -121.824151, 36.912247 ], [ -121.815, 36.9452 ], [ -121.814784, 36.945169 ], [ -121.489582, 38.08815 ], [ -122.973, 38.3039 ], [ -122.951223, 38.378287 ], [ -122.616922, 39.520217 ], [ -124.098837, 39.735876 ], [ -124.099, 39.7359 ], [ -124.093234, 39.754971 ], [ -124.076528, 39.810231 ], [ -123.666485, 41.166525 ], [ -123.650629, 41.218972 ], [ -123.644, 41.2409 ], [ -123.643785, 41.240869 ], [ -121.485, 40.9267 ], [ -121.502496, 40.874376 ], [ -121.889549, 39.716847 ], [ -120.416212, 39.502531 ], [ -120.416, 39.5025 ], [ -120.806849, 38.291111 ], [ -119.332, 38.0766 ], [ -119.355163, 38.002424 ], [ -119.7107, 36.863872 ], [ -118.233, 36.649 ], [ -118.239331, 36.628081 ], [ -118.684336, 35.157609 ], [ -118.688, 35.1455 ], [ -120.167913, 35.360572 ], [ -120.229336, 35.157609 ], [ -120.233, 35.1455 ], [ -122.233187, 35.436182 ], [ -122.234, 35.4363 ], [ -121.835726, 36.87056 ], [ -121.836, 36.8706 ] ] ]}),
-	STUDY_AREA=ee.FeatureCollection("projects/ucm-fallow-training/assets/central_valley_alluvial_boundary").geometry(),
-	TEST_STUDY_AREA=ee.Geometry({"type": "Polygon", "coordinates":[ [ [ -121.836, 36.8706 ], [-121.9, 36.8706], [-121.9, 36.9], [-121.836, 36.9], [ -121.836, 36.8706 ] ] ]}),
+	CRS='EPSG:4326',
 	TILE_SIZE=12800,
-	COLLECTIONS=['LANDSAT/LC08/C02/T1_L2'],
-	PIXEL_REDUCER="max",
-	EXPORT_FOLDER="et_exports_sseboper"
+	EXPORT_FOLDER="ee_exports"
 
 )
-
 
 def _get_fiona_args(polygon_path):
 	"""
@@ -127,7 +108,7 @@ class TaskRegistry(object):
 
 main_task_registry = TaskRegistry()
 
-class SSEBOPer(object):
+class Image(object):
 	def __init__(self, drive_root_folder=r"G:\My Drive"):
 		for key in DEFAULTS:  # set the defaults here
 			setattr(self, key.lower(), DEFAULTS[key])
@@ -140,60 +121,13 @@ class SSEBOPer(object):
 
 		self.filename_description = ""
 
-	def run(self, year, start, end):
-		self.year = year
-		self.start_date = f'{year}-{start}'
-		self.end_date = f'{year}-{end}'
-
-		self.study_region = self.study_area.bounds(1, 'EPSG:4326').coordinates().getInfo()
-
-		self.results = self._run_ssebop(self.start_date, self.end_date, self.pixel_reducer)
-
-	def _run_ssebop(self, start_date, end_date, pixel_reducer):
-		model_object = ssebop.Collection(collections=self.collections,
-										 et_reference_source=self.et_reference_source,
-										 et_reference_band=self.et_reference_band,
-										 et_reference_factor=self.et_reference_factor,
-										 et_reference_resample=self.et_reference_resample,
-										 et_reference_date_type=self.et_reference_date_type,
-										 start_date=start_date,
-										 end_date=end_date,
-										 cloud_cover_max=self.cloud_cover,
-										 geometry=self.study_area)
-		# get the computed ET for the overpass dates only
-		overpass_date_collection = model_object.overpass(variables=['et', 'et_reference', 'et_fraction'])
-		# now reduce it to a single image for the time period of interest by taking the pixel mean for overlapping data
-		# this will be a bit backward because we want to be able to select a different reducer later
-		et_collection = overpass_date_collection.select(['et'])
-		reducer = getattr(et_collection, pixel_reducer)  # get the function for the reducer
-		return reducer()  # call the reducer and return the results
-
-	def comparison(self, year, time1_start, time1_end, time2_start, time2_end, method="divide"):
-		start_date1 = f'{year}-{time1_start}'
-		end_date1 = f'{year}-{time1_end}'
-		start_date2 = f'{year}-{time2_start}'
-		end_date2 = f'{year}-{time2_end}'
-
-		self.year = year
-		self.start_date = start_date1
-		self.end_date = end_date2
-
-		image1 = self._run_ssebop(start_date1, end_date1, "min")
-		image2 = self._run_ssebop(start_date2, end_date2, "max")
-
-		# get the comparison function - e.g. image.subtract, image.divide
-		compare_func = getattr(image2, method)
-		output = compare_func(image1)
-
-		self.filename_description = f"comparison_{method}"
-
-		self.results = output
-
 	def _set_names(self, filename_prefix=""):
 		self.description = f"{self.pixel_reducer}ET_{self.year}-{self.start_date}--{self.end_date}_{filename_prefix}"
 		self.filename = f"{self.pixel_reducer}_et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
 
-	def export(self, filename_prefix="", export_type="Drive", clip=None, **export_kwargs):
+	def export(self, image, filename_prefix="", export_type="Drive", clip=None, **export_kwargs):
+		self.results = image
+
 		self._set_names(filename_prefix)
 
 		if clip:  # clip must be a geometry or feature in Earth Engine.
