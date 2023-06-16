@@ -3,7 +3,7 @@ import time
 
 import ee
 
-from . import ssebop
+from . import image
 from . import mosaic_rasters
 
 
@@ -30,7 +30,7 @@ class Image(object):
 		while True:
 			status = self._export_task.status()
 			if status['state'] == "COMPLETE":
-				ssebop.download_images_in_folder(source_location=os.path.join(self.drive_path, self.export_folder),
+				image.download_images_in_folder(source_location=os.path.join(self.drive_path, self.export_folder),
 												 download_location=download_location,
 												 prefix=self.prefix)
 				break
