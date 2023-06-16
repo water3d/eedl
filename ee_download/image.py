@@ -108,12 +108,32 @@ class TaskRegistry(object):
 
 main_task_registry = TaskRegistry()
 
+
 class Image(object):
-	def __init__(self, drive_root_folder=r"G:\My Drive"):
-		for key in DEFAULTS:  # set the defaults here
+	"""
+		The main class that does all the work. Any use of this package should instantiate this class for each export
+		the user wants to do. As we refine this, we may be able to provide just a single function in this module named
+		"export" or something of that sort for people who don't need access to control class behavior. That will likely
+		follow all the other enhancements, like converting the exports into async code.
+
+		The class has no required arguments as of 6/16/2023, but that may change. Any arguments provided get applied
+		directly to the class and override any defaults. Options include:
+
+		:param crs: Coordinate Reference System to use for exports in a format Earth Engine understands, such as "EPSG:3310"
+		:param tile_size: the number of pixels per side of tiles to export
+		:param export_folder: the name of the folder in the chosen export location that will be created for the export
+
+		This docstring needs to be checked to ensure it's in a standard format that Sphinx will render
+
+	"""
+	def __init__(self, drive_root_folder=r"G:\My Drive", **kwargs): # TODO: We shouldn't define a default drive root folder. This should always be provided by the user, but we need to figure out where in the workflow this happens.
+		for key in DEFAULTS:  # set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 			setattr(self, key.lower(), DEFAULTS[key])
 
-		self._last_task_status = {"state": "UNSUBMITTED"}
+		for key in kwargs:  # now apply any provided keyword arguments over the top of the defaults.
+			setattr(self, key, kwargs[key])
+
+		self._last_task_status = {"state": "UNSUBMITTED"}  # this will be the default status initially, so always assume it's unsubmitted if we haven't gotten anything from the server. "None" would work too, but then we couldn't just check the status
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # other option is "Cloud"
 
@@ -122,16 +142,16 @@ class Image(object):
 		self.filename_description = ""
 
 	def _set_names(self, filename_prefix=""):
-		self.description = f"{self.pixel_reducer}ET_{self.year}-{self.start_date}--{self.end_date}_{filename_prefix}"
-		self.filename = f"{self.pixel_reducer}_et_{self.year}-{self.start_date}--{self.end_date}_{self.filename_description}_{filename_prefix}"
+		self.description = filename_prefix
+		self.filename = f"{self.filename_description}_{filename_prefix}"
 
-	def export(self, image, filename_prefix="", export_type="Drive", clip=None, **export_kwargs):
-		self.results = image
+	def export(self, image, filename_prefix, export_type="Drive", clip=None, **export_kwargs):
+		self._ee_image = image
 
 		self._set_names(filename_prefix)
 
 		if clip:  # clip must be a geometry or feature in Earth Engine.
-			self.results.clip(clip)
+			self._ee_image = self._ee_image.clip(clip)
 
 		ee_kwargs = {
 			'description': self.description,
@@ -147,12 +167,12 @@ class Image(object):
 			if "folder" not in ee_kwargs:
 				ee_kwargs['folder'] = self.export_folder
 
-			self.task = ee.batch.Export.image.toDrive(self.results, **ee_kwargs)
+			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 			self.task.start()
 		elif export_type == "Cloud":
 			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"  # add the folder to the filename here for Google Cloud
 			self.bucket = ee_kwargs['bucket']
-			self.task = ee.batch.Export.image.toCloudStorage(self.results, **ee_kwargs)
+			self.task = ee.batch.Export.image.toCloudStorage(self._ee_image, **ee_kwargs)
 			self.task.start()
 
 		self.export_type = export_type
