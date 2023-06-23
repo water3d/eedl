@@ -5,8 +5,12 @@ from ee import ImageCollection
 # likely be using both. Let's not cause confusion
 import ee_download
 
+"""
+This file is strictly for testing purposes. It doesn't go through the normal testing process.
+"""
 
-def test_simple() -> None:
+
+def running_code() -> None:
     geometry = ee.FeatureCollection("users/nrsantos/vw_extraction_mask").geometry()
     s2_image = ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterBounds(geometry).filterDate("2022-07-01",
                                                                                                 "2022-07-14").first().select(
@@ -22,3 +26,6 @@ def test_simple() -> None:
     # Earth Engine failed and there wasn't anything to download (oops)
     # Adam, make sure to set the folder you want results to be downloaded to
     ee_download.image.main_task_registry.wait_for_images(r"D:\ee_export_test", sleep_time=60, callback="mosaic")
+
+
+running_code()
