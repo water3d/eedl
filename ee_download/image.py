@@ -35,9 +35,8 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, str]:
 	"""
 
 	parts = os.path.split(polygon_path)
-	# if the folder name ends
+	# if the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
 	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[1]:
-		# with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
 		return {'fp': parts[0], 'layer': parts[1]}
 	else:
 		return {'fp': polygon_path}
@@ -52,14 +51,12 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 	:return:
 	"""
 	folder_search_path = source_location
-	files = [filename for filename in os.listdir(
-		folder_search_path) if filename.startswith(prefix)]
+	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
 
 	os.makedirs(download_location, exist_ok=True)
 
 	for filename in files:
-		shutil.move(os.path.join(folder_search_path, filename),
-					os.path.join(download_location, filename))
+		shutil.move(os.path.join(folder_search_path, filename), os.path.join(download_location, filename))
 
 
 class TaskRegistry(object):
@@ -76,8 +73,7 @@ class TaskRegistry(object):
 
 	@property
 	def incomplete_tasks(self) -> List[ee.image.Image]:
-		initial_tasks = [
-			image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
+		initial_tasks = [image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
 		for image in initial_tasks:  # update anything that's currently running or waiting first
 			image._check_task_status()
 
@@ -85,20 +81,21 @@ class TaskRegistry(object):
 
 	@property
 	def complete_tasks(self) -> List[ee.image.Image]:
-		return [image for image in self.images if
-				image._last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
+		return [image for image in self.images if image._last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
 	def downloadable_tasks(self) -> List[ee.image.Image]:
-		return [image for image in self.complete_tasks if
-				image.task_data_downloaded is False and image._last_task_status['state'] not in self.FAILED_STATUSES]
+		return [image for image in self.complete_tasks if image.task_data_downloaded is False and image._last_task_status['state'] not in self.FAILED_STATUSES]
 
 	def download_ready_images(self, download_location: Union[str, Path]) -> None:
 		for image in self.downloadable_tasks:
 			print(f"{image.filename} is ready for download")
 			image.download_results(download_location=download_location, callback=self.callback)
 
-	def wait_for_images(self, download_location: Union[str, Path], sleep_time: int = 10, callback: Optional[str] = None,
+	def wait_for_images(self,
+						download_location: Union[str, Path],
+						sleep_time: int = 10,
+						callback: Optional[str] = None,
 						try_again_disk_full: bool = True) -> None:
 
 		self.callback = callback
@@ -107,8 +104,7 @@ class TaskRegistry(object):
 				self.download_ready_images(download_location)
 			except OSError:
 				if try_again_disk_full:
-					print(
-						"OSError reported. Disk may be full - will try again - clear space")
+					print("OSError reported. Disk may be full - will try again - clear space")
 					pass
 				else:
 					raise
@@ -154,8 +150,8 @@ class Image(object):
 		self._ee_image = None
 		self.output_folder = None
 
-		for key in DEFAULTS:  # set the defaults here - this is a nice strategy where we get to define constants near
-			# the top that aren't buried in code, then apply them here
+		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
+		for key in DEFAULTS:
 			setattr(self, key.lower(), DEFAULTS[key])
 
 		for key in kwargs:  # now apply any provided keyword arguments over the top of the defaults.
@@ -175,11 +171,14 @@ class Image(object):
 		self.description = filename_prefix
 		self.filename = f"{self.filename_description}_{filename_prefix}"
 
-	def export(self, image: ee.image.Image, filename_prefix: str, export_type: str = "Drive",
-				clip: ee.geometry.Geometry = None, **export_kwargs) -> None:
+	def export(self,
+				image: ee.image.Image,
+				filename_prefix: str,
+				export_type: str = "Drive",
+				clip: ee.geometry.Geometry = None,
+				**export_kwargs) -> None:
 
-		# If image is does not have a clip attribute, the error message is not very helpful. This allows for a
-		# custom error message:
+		# If image is does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
 
@@ -187,12 +186,11 @@ class Image(object):
 
 		self._set_names(filename_prefix)
 
-		if clip:  # clip must be a geometry or feature in Earth Engine.
-			# Silent error if clip is not a ee.geometry.Geometry
-			if isinstance(clip, ee.geometry.Geometry):
-				self._ee_image = self._ee_image.clip(clip)
-			else:
-				raise ValueError("Invalid geometry provided for export")
+		# Get a silent error if clip is not of type ee.geometry.Geometry
+		if isinstance(clip, ee.geometry.Geometry):
+			self._ee_image = self._ee_image.clip(clip)
+		elif clip:
+			raise ValueError("Invalid geometry provided for export")
 
 		ee_kwargs = {
 			'description': self.description,
@@ -209,15 +207,13 @@ class Image(object):
 		if export_type.lower() == "drive":
 			if "folder" not in ee_kwargs:
 				ee_kwargs['folder'] = self.export_folder
-			self.task = ee.batch.Export.image.toDrive(
-				self._ee_image, **ee_kwargs)
+			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 			self.task.start()
 		elif export_type.lower() == "cloud":
-			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
 			# add the folder to the filename here for Google Cloud
+			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
 			self.bucket = ee_kwargs['bucket']
-			self.task = ee.batch.Export.image.toCloudStorage(
-				self._ee_image, **ee_kwargs)
+			self.task = ee.batch.Export.image.toCloudStorage(self._ee_image, **ee_kwargs)
 			self.task.start()
 
 		# export_type is not valid
@@ -241,21 +237,16 @@ class Image(object):
 		# "FAILED", "READY", "SUBMITTED" (maybe - double check that - it might be that it waits with UNSUBMITTED),
 		# "RUNNING", "UNSUBMITTED"
 
-		folder_search_path = os.path.join(
-			self.drive_root_folder, self.export_folder)
-		self.output_folder = os.path.join(
-			download_location, self.export_folder)
+		folder_search_path = os.path.join(self.drive_root_folder, self.export_folder)
+		self.output_folder = os.path.join(download_location, self.export_folder)
 		if self.export_type == "Drive":
-			download_images_in_folder(
-				folder_search_path, self.output_folder, prefix=self.filename)
+			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		elif self.export_type == "Cloud":
-			google_cloud.download_public_export(
-				self.bucket, self.output_folder, f"{self.export_folder}/{self.filename}")
+			google_cloud.download_public_export(self.bucket, self.output_folder, f"{self.export_folder}/{self.filename}")
 
 		else:
-			raise ValueError(
-				"Unknown export_type (not one of 'Drive', 'Cloud') - can't download")
+			raise ValueError("Unknown export_type (not one of 'Drive', 'Cloud') - can't download")
 
 		self.task_data_downloaded = True
 
@@ -267,9 +258,12 @@ class Image(object):
 		self.mosaic_image = os.path.join(self.output_folder, f"{self.filename}_mosaic.tif")
 		mosaic_rasters.mosaic_folder(self.output_folder, self.mosaic_image, prefix=self.filename)
 
-	def zonal_stats(self, polygons: Union[str, Path], keep_fields: Tuple = ("UniqueID", "CLASS2"),
+	def zonal_stats(self,
+					polygons: Union[str, Path],
+					keep_fields: Tuple = ("UniqueID", "CLASS2"),
 					stats: Tuple = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
-					report_threshold: int = 1000, write_batch_size: int = 2000) -> None:
+					report_threshold: int = 1000,
+					write_batch_size: int = 2000) -> None:
 		"""
 
 		:param polygons:
@@ -294,8 +288,7 @@ class Image(object):
 
 		with fiona.open(main_file_path, **kwargs) as polys_open:
 
-			zstats_results_geo = rasterstats.gen_zonal_stats(
-				polys_open, self.mosaic_image, stats=stats, geojson_out=True, nodata=-9999)
+			zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, self.mosaic_image, stats=stats, geojson_out=True, nodata=-9999)
 
 			fieldnames = stats + keep_fields
 
@@ -313,8 +306,8 @@ class Image(object):
 				writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 				writer.writeheader()
 				results = []
-				for poly in zstats_results_geo:  # get the result for the polygon, then filter the keys with the
-					# dictionary comprehension below
+				# get the result for the polygon, then filter the keys with the dictionary comprehension below
+				for poly in zstats_results_geo:
 					result = {key: poly['properties'][key] for key in fieldnames}
 
 					for key in result:  # truncate the floats
@@ -324,8 +317,8 @@ class Image(object):
 					i += 1
 					results.append(result)
 					if i % write_batch_size == 0:
-						writer.writerows(
-							results)  # then write the lone result out one at a time to not store it all in RAM
+						# then write the lone result out one at a time to not store it all in RAM
+						writer.writerows(results)
 						results = []
 
 					if report_threshold and i % report_threshold == 0:

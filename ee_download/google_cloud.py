@@ -40,12 +40,15 @@ def download_public_export(bucket_name: str, output_folder: Union[str, Path], pr
 	for url in urls:
 		filename = url.split("/")[-1]  # get the filename
 		output_path = Path(output_folder) / filename  # construct the output path
-		response = requests.get(url)  # get the data - this could be a problem if it's larger than fits in RAM - I
-		# believe requests has a way to operate as a streambuffer - not looking into that at this moment
+		# get the data - this could be a problem if it's larger than fits in RAM - I believe requests has a way to operate as a streambuffer - not looking into that at this moment
+		response = requests.get(url)
 		output_path.write_bytes(response.content)  # write it to a file
 
 
-def download_export(bucket_name: str, output_folder: Union[str, Path], prefix: str, delimiter: str = "/",
+def download_export(bucket_name: str,
+					output_folder: Union[str, Path],
+					prefix: str,
+					delimiter: str = "/",
 					autodelete: bool = True):
 	"""Downloads a blob from the bucket.
 

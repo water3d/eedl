@@ -16,8 +16,8 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, str]:
 	"""
 
 	parts = os.path.split(polygon_path)
-	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[
-		1]:  # if the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
+	# if the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
+	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[1]:
 		return {'fp': parts[0], 'layer': parts[1]}
 	else:
 		return {'fp': polygon_path}
@@ -60,8 +60,7 @@ def zonal_stats(polygons: Union[str, Path],
 
 	with fiona.open(main_file_path, **kwargs) as polys_open:
 
-		zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True,
-														 nodata=-9999, **kwargs)
+		zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
 
 		fieldnames = stats + keep_fields
 
@@ -120,8 +119,8 @@ def run_data_2018_baseline() -> None:
 		liq = dataset["liq"]
 		raster_folder = dataset["raster_folder"]
 		output_folder = dataset["output_folder"]
-		rasters = [item for item in os.listdir(raster_folder) if item.endswith(
-			".tif") and item not in skips]  # was going to do this differently, but leaving it alone
+		# was going to do this differently, but leaving it alone
+		rasters = [item for item in os.listdir(raster_folder) if item.endswith(".tif") and item not in skips]
 		rasters_processing = [os.path.join(raster_folder, item) for item in rasters]
 
 		print(liq)

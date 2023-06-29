@@ -8,7 +8,9 @@ import pandas
 from seaborn import objects as so
 
 
-def merge_outputs(file_mapping, date_field: str = "et_date", sqlite_db: Optional[str] = None,
+def merge_outputs(file_mapping,
+					date_field: str = "et_date",
+					sqlite_db: Optional[str] = None,
 					sqlite_table: Optional[str] = None) -> pandas.DataFrame:
 	"""
 		Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
