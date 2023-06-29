@@ -2,16 +2,21 @@
 	A tool to merge separate timeseries outputs into a single data frame or DB table
 """
 import sqlite3
+from typing import Optional
 
 import pandas
 from seaborn import objects as so
 
 
-def merge_outputs(file_mapping, date_field: str = "et_date", sqlite_db=None, sqlite_table=None) -> pandas.DataFrame:
+def merge_outputs(file_mapping, date_field: str = "et_date", sqlite_db: Optional[str] = None,
+					sqlite_table: Optional[str] = None) -> pandas.DataFrame:
 	"""
 		Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
 		can optionally insert into a sqlite database
 	:param file_mapping: a set of tuples with a path to a file and a time value (string or datetime) to associate with it.
+	:param date_field:
+	:param sqlite_db:
+	:param sqlite_table:
 	:return: pandas data frame with all file data and times
 	"""
 
@@ -36,12 +41,10 @@ def merge_outputs(file_mapping, date_field: str = "et_date", sqlite_db=None, sql
 
 
 def plot_merged(df: pandas.DataFrame, et_field, date_field: str = "et_date", uniqueid: str = "UniqueID") -> so.Plot:
-	plot = (
+	return (
 		so.Plot(df,
 				x=date_field,
 				y=et_field,
 				).add(so.Line(linewidth=0.5, alpha=0.1), group=uniqueid)
 		.layout(size=(8, 4))
 	)
-
-	return plot

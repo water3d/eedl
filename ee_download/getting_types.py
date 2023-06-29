@@ -20,8 +20,10 @@ def running_code() -> None:
 	# we can use a Google Cloud bucket for most testing this is clunky - we should make the instantiation of the image
 	# be able to take a kwarg that sets the value of image, I think.
 	image = ee_download.Image(drive_root_folder=r"H:\My Drive")
+
 	image.export(s2_image, "valley_water_s2_test_image",
-				 export_type="Drive", clip=geometry)
+					export_type="Drive", clip=geometry)
+
 
 	# We need to make it check and report whether the export on the EE side was successful. This test "passed" because
 	# Earth Engine failed and there wasn't anything to download (oops)

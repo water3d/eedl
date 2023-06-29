@@ -1,11 +1,12 @@
 import csv
 import os
+from typing import Dict, Tuple
 
 import fiona
 import rasterstats
 
 
-def _get_fiona_args(polygon_path: str) -> dict[str, str]:
+def _get_fiona_args(polygon_path: str) -> Dict[str, str]:
 	"""
 		A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
 		to do this, but it'll work in many situations
@@ -21,12 +22,12 @@ def _get_fiona_args(polygon_path: str) -> dict[str, str]:
 		return {'fp': polygon_path}
 
 
-def zonal_stats(polygons,
-				raster,
+def zonal_stats(polygons: str,
+				raster: any,  # need to find out what this is
 				output_folder: str,
 				filename: str,
-				keep_fields: iter[str] = ("UniqueID", "CLASS2"),
-				stats: iter[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
+				keep_fields: Tuple[str] = ("UniqueID", "CLASS2"),
+				stats: Tuple[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 				report_threshold: int = 1000,
 				write_batch_size: int = 2000,
 				**kwargs) -> None:
@@ -36,6 +37,9 @@ def zonal_stats(polygons,
 	"""
 
 	:param polygons:
+	:param raster:
+	:param output_folder:
+	:param filename:
 	:param keep_fields:
 	:param stats:
 	:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000. Set to None to disable

@@ -2,7 +2,7 @@ import csv
 import os
 import shutil
 import time
-from collections.abc import Iterable
+from typing import Dict, List, Optional, Tuple, Union
 
 import ee
 import fiona
@@ -25,7 +25,7 @@ DEFAULTS = dict(
 )
 
 
-def _get_fiona_args(polygon_path: str) -> dict[str, str]:
+def _get_fiona_args(polygon_path: str) -> Dict[str, str]:
 	"""
 		A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
 		to do this, but it'll work in many situations
@@ -62,7 +62,7 @@ def download_images_in_folder(source_location: str, download_location: str, pref
 
 
 class TaskRegistry(object):
-	INCOMPLETE_STATUSES = ("READY", "NOT-SUBMITTED", "RUNNING")
+	INCOMPLETE_STATUSES = ("READY", "UNSUBMITTED", "RUNNING")
 	COMPLETE_STATUSES = ["COMPLETED"]
 	FAILED_STATUSES = ["CANCEL_REQUESTED", "CANCELLED", "FAILED"]
 
@@ -74,7 +74,7 @@ class TaskRegistry(object):
 		self.images.append(image)
 
 	@property
-	def incomplete_tasks(self) -> Iterable[ee.image.Image]:
+	def incomplete_tasks(self) -> List[ee.image.Image]:
 		initial_tasks = [
 			image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
 		for image in initial_tasks:  # update anything that's currently running or waiting first
@@ -83,22 +83,21 @@ class TaskRegistry(object):
 		return [image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
 
 	@property
-	def complete_tasks(self) -> Iterable[ee.image.Image]:
+	def complete_tasks(self) -> List[ee.image.Image]:
 		return [image for image in self.images if
 				image._last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
-	def downloadable_tasks(self) -> Iterable[ee.image.Image]:
+	def downloadable_tasks(self) -> List[ee.image.Image]:
 		return [image for image in self.complete_tasks if
 				image.task_data_downloaded is False and image._last_task_status['state'] not in self.FAILED_STATUSES]
 
 	def download_ready_images(self, download_location: str) -> None:
 		for image in self.downloadable_tasks:
 			print(f"{image.filename} is ready for download")
-			image.download_results(
-				download_location=download_location, callback=self.callback)
+			image.download_results(download_location=download_location, callback=self.callback)
 
-	def wait_for_images(self, download_location: str, sleep_time: int = 10, callback: str | None = None,
+	def wait_for_images(self, download_location: str, sleep_time: int = 10, callback: Optional[str] = None,
 						try_again_disk_full: bool = True) -> None:
 
 		self.callback = callback
@@ -139,6 +138,12 @@ class Image(object):
 	def __init__(self, drive_root_folder: str = r"G:\My Drive", **kwargs) -> None:
 		# TODO: We shouldn't define a default drive root folder. This should always be provided by the user,
 		#  but we need to figure out where in the workflow this happens.
+
+		# Check if the path is valid before we do anything else
+
+		if not os.path.exists(drive_root_folder):
+			raise NotADirectoryError("The provided path is not a valid directory")
+
 		self.crs = None
 		self.tile_size = None
 		self.export_folder = None
@@ -155,10 +160,9 @@ class Image(object):
 		for key in kwargs:  # now apply any provided keyword arguments over the top of the defaults.
 			setattr(self, key, kwargs[key])
 
-		self._last_task_status = {
-			"state": "NOT-SUBMITTED"}  # this will be the default status initially, so always assume it's NOT-SUBMITTED
-		# if we haven't gotten anything from the server. "None" would work too, but then we couldn't just check the
-		# status
+		self._last_task_status = {"state": "UNSUBMITTED"}
+		# this will be the default status initially, so always assume it's UNSUBMITTED if we haven't gotten anything
+		# from the server. "None" would work too, but then we couldn't just check the status
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # other option is "Cloud"
 
@@ -173,12 +177,21 @@ class Image(object):
 	def export(self, image: ee.image.Image, filename_prefix: str, export_type: str = "Drive",
 				clip: ee.geometry.Geometry = None, **export_kwargs) -> None:
 
+		# If image is does not have a clip attribute, the error message is not very helpful. This allows for a
+		# custom error message:
+		if not isinstance(image, ee.image.Image):
+			raise ValueError("Invalid image")
+
 		self._ee_image = image
 
 		self._set_names(filename_prefix)
 
 		if clip:  # clip must be a geometry or feature in Earth Engine.
-			self._ee_image = self._ee_image.clip(clip)
+			# Silent error if clip is not a ee.geometry.Geometry
+			if isinstance(clip, ee.geometry.Geometry):
+				self._ee_image = self._ee_image.clip(clip)
+			else:
+				raise ValueError("Invalid geometry")
 
 		ee_kwargs = {
 			'description': self.description,
@@ -207,11 +220,21 @@ class Image(object):
 				self._ee_image, **ee_kwargs)
 			self.task.start()
 
+		# export_type is not valid
+		else:
+			if export_type == "drive":
+				raise ValueError("Invalid value for export_type. Did you mean Drive?")
+
+			elif export_type == "cloud":
+				raise ValueError("Invalid value for export_type. Did you mean Cloud?")
+
+			raise ValueError("Invalid value for export_type. Did you mean Drive or Cloud?")
+
 		self.export_type = export_type
 
 		main_task_registry.add(self)
 
-	def download_results(self, download_location: str, callback: str | None = None) -> None:
+	def download_results(self, download_location: str, callback: Optional[str] = None) -> None:
 		"""
 
 		:return:
@@ -221,8 +244,8 @@ class Image(object):
 
 		# state options
 		# == "CANCELLED", "CANCEL_REQUESTED", "COMPLETED",
-		# "FAILED", "READY", "SUBMITTED" (maybe - double check that - it might be that it waits with NOT-SUBMITTED),
-		# "RUNNING", "NOT-SUBMITTED"
+		# "FAILED", "READY", "SUBMITTED" (maybe - double check that - it might be that it waits with UNSUBMITTED),
+		# "RUNNING", "UNSUBMITTED"
 
 		folder_search_path = os.path.join(
 			self.drive_root_folder, self.export_folder)
@@ -252,20 +275,19 @@ class Image(object):
 		mosaic_rasters.mosaic_folder(
 			self.output_folder, self.mosaic_image, prefix=self.filename)
 
-	def zonal_stats(self, polygons, keep_fields=("UniqueID", "CLASS2"),
-					stats=('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
-					report_threshold=1000, write_batch_size=2000):
-
-		print(f'Line 249 type is: {type(polygons)}')
-		print(f'Line 250 type is: {type(keep_fields)}')
-		print(f'Line 251 type is: {type(stats)}')
-		print(f'Line 252 type is: {type(report_threshold)}')
-		print(f'Line 254 type is: {type(write_batch_size)}')
+	def zonal_stats(self, polygons: str, keep_fields: Tuple = ("UniqueID", "CLASS2"),
+					stats: Tuple = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
+					report_threshold: int = 1000, write_batch_size: int = 2000) -> None:
 		"""
 
-		:param polygons: :param keep_fields: :param stats: :param report_threshold: After how many iterations should
-		it print out the feature number it's on. Defaults to 1000. Set to None to disable :param write_batch_size:
-		How many zones should we store up before writing to the disk? :return:
+		:param polygons:
+		:param keep_fields:
+		:param stats:
+		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000.
+		Set to None to disable
+		:param write_batch_size: How many zones should we store up before writing to the disk?
+		:return:
+
 		"""
 		# note use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on
 		# the next line, each item isn't evaluated, which should prevent us from needing to store a geojson
@@ -317,7 +339,7 @@ class Image(object):
 					if report_threshold and i % report_threshold == 0:
 						print(i)
 
-	def _check_task_status(self) -> dict[str, str | bool]:
+	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 
 		new_status = self.task.status()
 
