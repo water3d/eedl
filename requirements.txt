@@ -1,5 +1,4 @@
 earthengine-api
-openet-ssebop
 gdal
 fiona
 pandas
