@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='ee_download',
+    name='eedl',
     version='1.0.0',
     packages=['tests', 'ee_download', 'ee_download..pytest_cache'],
     url='',

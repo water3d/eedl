@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from typing import Union
 
 import requests
 
@@ -32,7 +33,7 @@ def get_public_export_urls(bucket_name: str, prefix: str = ""):
 	return filtered
 
 
-def download_public_export(bucket_name: str, output_folder: str, prefix: str = ""):
+def download_public_export(bucket_name: str, output_folder: Union[str, Path], prefix: str = ""):
 	# get the urls of items in the bucket with the specified prefix
 	urls = get_public_export_urls(bucket_name, prefix)
 
@@ -44,7 +45,8 @@ def download_public_export(bucket_name: str, output_folder: str, prefix: str = "
 		output_path.write_bytes(response.content)  # write it to a file
 
 
-def download_export(bucket_name: str, output_folder: str, prefix: str, delimiter: str = "/", autodelete: bool = True):
+def download_export(bucket_name: str, output_folder: Union[str, Path], prefix: str, delimiter: str = "/",
+					autodelete: bool = True):
 	"""Downloads a blob from the bucket.
 
 	Modified from Google Cloud sample documentation at

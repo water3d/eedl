@@ -1,17 +1,19 @@
 import os
 import tempfile
 from collections.abc import Iterable
+from pathlib import Path
+from typing import Union
 
 from osgeo import gdal
 
 
-def mosaic_folder(folder_path: str, output_path: str, prefix: str = "") -> None:
+def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: str = "") -> None:
 	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if
 			filename.endswith(".tif") and filename.startswith(prefix)]
 	mosaic_rasters(tifs, output_path)
 
 
-def mosaic_rasters(raster_paths: Iterable[str], output_path: str, add_overviews: bool = True) -> None:
+def mosaic_rasters(raster_paths: Iterable[Union[str, Path]], output_path: Union[str, Path], add_overviews: bool = True) -> None:
 	"""
 		Adapted from https://gis.stackexchange.com/a/314580/1955 and
 		https://www.gislite.com/tutorial/k8024 along with other basic lookups on GDAL Python bindings
