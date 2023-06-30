@@ -1,12 +1,15 @@
 import os
-
-#from google.cloud import storage
-
-import requests
 import re
 from pathlib import Path
+from typing import Union
 
-def get_public_export_urls(bucket_name, prefix=""):
+import requests
+
+
+# from google.cloud import storage
+
+
+def get_public_export_urls(bucket_name: str, prefix: str = ""):
 	"""
 		Downloads items from a *public* Google Storage bucket without using a GCloud login. Filters only to files
 		with the specified prefix
@@ -30,25 +33,29 @@ def get_public_export_urls(bucket_name, prefix=""):
 	return filtered
 
 
-def download_public_export(bucket_name, output_folder, prefix=""):
+def download_public_export(bucket_name: str, output_folder: Union[str, Path], prefix: str = ""):
 	# get the urls of items in the bucket with the specified prefix
 	urls = get_public_export_urls(bucket_name, prefix)
 
 	for url in urls:
 		filename = url.split("/")[-1]  # get the filename
 		output_path = Path(output_folder) / filename  # construct the output path
-		response = requests.get(url)  # get the data - this could be a problem if it's larger than fits in RAM - I believe requests has a way to operate as a streambuffer - not looking into that at this moment
+		# get the data - this could be a problem if it's larger than fits in RAM - I believe requests has a way to operate as a streambuffer - not looking into that at this moment
+		response = requests.get(url)
 		output_path.write_bytes(response.content)  # write it to a file
 
 
-
-def download_export(bucket_name, output_folder, prefix, delimiter="/", autodelete=True):
+def download_export(bucket_name: str,
+					output_folder: Union[str, Path],
+					prefix: str,
+					delimiter: str = "/",
+					autodelete: bool = True):
 	"""Downloads a blob from the bucket.
 
 	Modified from Google Cloud sample documentation at
-	 	https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python
-	 	and
-	 	https://cloud.google.com/storage/docs/samples/storage-list-files-with-prefix
+		 https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python
+		 and
+		 https://cloud.google.com/storage/docs/samples/storage-list-files-with-prefix
 	"""
 	# The ID of your GCS bucket
 	# bucket_name = "your-bucket-name"
@@ -76,8 +83,8 @@ def download_export(bucket_name, output_folder, prefix, delimiter="/", autodelet
 			if autodelete:
 				blob_data.delete()
 
-	#print(
-	#	"Downloaded storage object {} from bucket {} to local file {}.".format(
-	#		source_blob_name, bucket_name, destination_file_name
-	#	)
-	#)
+# print(
+#	"Downloaded storage object {} from bucket {} to local file {}.".format(
+#		source_blob_name, bucket_name, destination_file_name
+#	)
+# )
