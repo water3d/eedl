@@ -8,13 +8,14 @@ from typing import Dict, List, Optional, Tuple, Union
 import ee
 import fiona
 import rasterstats
+from ee import EEException
 
 from . import google_cloud
 from . import mosaic_rasters
 
 try:
 	ee.Initialize()
-except:  # not sure what error it raises right now
+except EEException:
 	ee.Authenticate()
 	ee.Initialize()
 
