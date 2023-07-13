@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import ee
 import fiona
@@ -99,6 +99,9 @@ class TaskRegistry(object):
 						callback: Optional[str] = None,
 						try_again_disk_full: bool = True) -> None:
 
+		if not isinstance(sleep_time, int):
+			raise ValueError("wait_for_images sleep_time needs to be an integer")
+
 		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
 			try:
@@ -175,7 +178,7 @@ class Image(object):
 	def export(self,
 				image: ee.image.Image,
 				filename_prefix: str,
-				export_type: str = "Drive",
+				export_type: str = "drive",
 				clip: ee.geometry.Geometry = None,
 				**export_kwargs) -> None:
 
@@ -221,11 +224,11 @@ class Image(object):
 		else:
 			raise ValueError("Invalid value for export_type. Did you mean drive or cloud?")
 
-		self.export_type = export_type
+		self.export_type = export_type.lower()
 
 		main_task_registry.add(self)
 
-	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None) -> None:
+	def download_results(self, download_location: Union[str, Path], callback: Optional[Union[str, Callable[[], None]]] = None) -> None:
 		"""
 
 		:return:
@@ -240,20 +243,23 @@ class Image(object):
 
 		folder_search_path = os.path.join(self.drive_root_folder, self.export_folder)
 		self.output_folder = os.path.join(download_location, self.export_folder)
-		if self.export_type == "Drive":
+		if self.export_type == "drive":
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
-		elif self.export_type == "Cloud":
+		elif self.export_type == "cloud":
 			google_cloud.download_public_export(self.bucket, self.output_folder, f"{self.export_folder}/{self.filename}")
 
 		else:
-			raise ValueError("Unknown export_type (not one of 'Drive', 'Cloud') - can't download")
+			raise ValueError("Unknown export_type (not one of 'drive', 'cloud') - can't download")
 
 		self.task_data_downloaded = True
 
 		if callback:
-			callback_func = getattr(self, callback)
-			callback_func()
+			try:
+				getattr(self, callback)() if isinstance(callback, str) else callback()
+
+			except AttributeError:
+				raise AttributeError("Invalid callback function")
 
 	def mosaic(self) -> None:
 		self.mosaic_image = os.path.join(self.output_folder, f"{self.filename}_mosaic.tif")
