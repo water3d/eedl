@@ -4,7 +4,8 @@
 
 # Nick removes all JetBrains stuff - don't need to share any configs
 .idea/*
-
+.tox
+42.0
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml

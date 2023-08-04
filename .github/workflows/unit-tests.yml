@@ -1,0 +1,64 @@
+name: Unit Tests
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  Test-Ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11",]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Create Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-activate-base: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Test with tox
+        shell: bash -el {0}
+        run: tox
+
+  Test-Windows:
+    runs-on: windows-latest
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix:
+        python-version: [ "3.8", "3.9", "3.10", "3.11", ]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Create Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-activate-base: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+
+      - name: Install dependencies
+        run: |
+          conda install pip tox
+
+      - name: Conda list
+        run: conda list
+
+      - name: Test with tox
+        shell: bash -el {0}
+        run: tox

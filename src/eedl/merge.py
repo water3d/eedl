@@ -37,7 +37,7 @@ def merge_outputs(file_mapping,
 
 	if sqlite_db:
 		with sqlite3.connect(sqlite_db) as conn:
-			final_df.to_sql(sqlite_table, conn)
+			final_df.to_sql(str(sqlite_table), conn)
 
 	return final_df
 

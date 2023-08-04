@@ -6,7 +6,7 @@ from typing import Union
 import requests
 
 
-# from google.cloud import storage
+from google.cloud import storage  # type: ignore
 
 
 def get_public_export_urls(bucket_name: str, prefix: str = ""):
@@ -25,7 +25,7 @@ def get_public_export_urls(bucket_name: str, prefix: str = ""):
 	listing = requests.get(request_url).text
 
 	# comes back as an XML listing - don't need to parse the XML, just need the values of the Key elements
-	pattern = re.compile("\<Key\>(.*?)\<\/Key\>")
+	pattern = re.compile("<Key>(.*?)</Key>")
 	items = pattern.findall(listing)
 	# make them into full URLs with the bucket URL at the front and check if the files have the prefix specific
 	filtered = [f"{request_url}{item}" for item in items if item.startswith(prefix)]
@@ -53,9 +53,9 @@ def download_export(bucket_name: str,
 	"""Downloads a blob from the bucket.
 
 	Modified from Google Cloud sample documentation at
-		 https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python
-		 and
-		 https://cloud.google.com/storage/docs/samples/storage-list-files-with-prefix
+		https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python
+		and
+		https://cloud.google.com/storage/docs/samples/storage-list-files-with-prefix
 	"""
 	# The ID of your GCS bucket
 	# bucket_name = "your-bucket-name"
@@ -84,7 +84,7 @@ def download_export(bucket_name: str,
 				blob_data.delete()
 
 # print(
-#	"Downloaded storage object {} from bucket {} to local file {}.".format(
-#		source_blob_name, bucket_name, destination_file_name
-#	)
+# "Downloaded storage object {} from bucket {} to local file {}.".format(
+# source_blob_name, bucket_name, destination_file_name
+# )
 # )
