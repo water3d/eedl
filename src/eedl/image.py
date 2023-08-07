@@ -8,16 +8,16 @@ from typing import Dict, List, Optional, Tuple, Union
 import ee
 import fiona
 import rasterstats
-from ee import EEException
+# from ee import EEException
 
 from . import google_cloud
 from . import mosaic_rasters
 
-try:
-	ee.Initialize()
-except EEException:
-	ee.Authenticate()
-	ee.Initialize()
+# try:
+# 	ee.Initialize()
+# except EEException:
+# 	ee.Authenticate()
+# 	ee.Initialize()
 
 DEFAULTS = dict(
 	CRS='EPSG:4326',

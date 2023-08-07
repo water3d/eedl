@@ -5,18 +5,23 @@ on:
   - pull_request
 
 jobs:
-  Test-Ubuntu:
-    runs-on: ubuntu-latest
+  Test-Package:
+    runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11",]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Create Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -24,41 +29,23 @@ jobs:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge
 
-      - name: Install dependencies
+      - name: Install Dependencies Ubuntu
+        if: matrix.os ==  'ubuntu-latest'
         run: |
           python -m pip install --upgrade pip
-          pip install tox
+          pip install 'tox<4'
+          pip install 'tox-gh-actions<2'
+          pip install tox-conda
 
-      - name: Test with tox
-        shell: bash -el {0}
-        run: tox
-
-  Test-Windows:
-    runs-on: windows-latest
-    strategy:
-      max-parallel: 4
-      fail-fast: false
-      matrix:
-        python-version: [ "3.8", "3.9", "3.10", "3.11", ]
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Create Conda Environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-activate-base: true
-          python-version: ${{ matrix.python-version }}
-          channels: conda-forge
-
-      - name: Install dependencies
+      - name: Install Dependencies Windows
+        if: matrix.os ==  'windows-latest'
         run: |
-          conda install pip tox
-
-      - name: Conda list
-        run: conda list
+          conda install pip
+          conda install "tox<4"
+          pip install "tox-gh-actions<2"
+          pip install tox-conda
 
       - name: Test with tox
         shell: bash -el {0}
-        run: tox
+        run: |
+          tox
