@@ -13,8 +13,8 @@ def merge_outputs(file_mapping,
 					sqlite_db: Optional[str] = None,
 					sqlite_table: Optional[str] = None) -> pandas.DataFrame:
 	"""
-		Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
-		can optionally insert into a sqlite database
+	Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
+	can optionally insert into a sqlite database
 	:param file_mapping: a set of tuples with a path to a file and a time value (string or datetime) to associate with it.
 	:param date_field:
 	:param sqlite_db:

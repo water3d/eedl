@@ -29,8 +29,8 @@ DEFAULTS = dict(
 
 def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
 	"""
-		A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-		to do this, but it'll work in many situations
+	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
+	to do this, but it'll work in many situations
 	:param polygon_path:
 	:return:
 	"""
@@ -45,7 +45,7 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 
 def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
-		Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
+	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
 	:param source_location:
 	:param download_location:
 	:param prefix:
@@ -118,13 +118,13 @@ main_task_registry = TaskRegistry()
 
 class Image:
 	"""
-		The main class that does all the work. Any use of this package should instantiate this class for each export
-		the user wants to do. As we refine this, we may be able to provide just a single function in this module named
-		"export" or something of that sort for people who don't need access to control class behavior. That will likely
-		follow all the other enhancements, like converting the exports into async code.
+	The main class that does all the work. Any use of this package should instantiate this class for each export
+	the user wants to do. As we refine this, we may be able to provide just a single function in this module named
+	"export" or something of that sort for people who don't need access to control class behavior. That will likely
+	follow all the other enhancements, like converting the exports into async code.
 
-		The class has no required arguments as of 6/16/2023, but that may change. Any arguments provided get applied
-		directly to the class and override any defaults. Options include:
+	The class has no required arguments as of 6/16/2023, but that may change. Any arguments provided get applied
+	directly to the class and override any defaults. Options include:
 
 	:param crs: Coordinate Reference System to use for exports in a format Earth Engine understands, such as "EPSG:3310"
 	:param tile_size: the number of pixels per side of tiles to export
