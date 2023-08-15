@@ -8,16 +8,12 @@ from typing import Dict, List, Optional, Tuple, Union
 import ee
 import fiona
 import rasterstats
-# from ee import EEException
+from ee import EEException
 
 from . import google_cloud
 from . import mosaic_rasters
 
-# try:
-# 	ee.Initialize()
-# except EEException:
-# 	ee.Authenticate()
-# 	ee.Initialize()
+
 
 DEFAULTS = dict(
 	CRS='EPSG:4326',
@@ -133,7 +129,7 @@ class Image:
 	This docstring needs to be checked to ensure it's in a standard format that Sphinx will render
 	"""
 
-	def __init__(self, drive_root_folder: Union[str, Path] = r"G:\My Drive", **kwargs) -> None:
+	def __init__(self, drive_root_folder: Union[str, Path], **kwargs) -> None:
 		# TODO: We shouldn't define a default drive root folder. This should always be provided by the user,
 		#  but we need to figure out where in the workflow this happens.
 
@@ -172,6 +168,14 @@ class Image:
 		self.description = filename_prefix
 		self.filename = f"{self.filename_description}_{filename_prefix}"
 
+	@staticmethod
+	def _initialize() -> None:
+		try:
+			ee.Initialize()
+		except EEException:
+			ee.Authenticate()
+			ee.Initialize()
+
 	def export(self,
 				image: ee.image.Image,
 				filename_prefix: str,
@@ -182,6 +186,8 @@ class Image:
 		# If image does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
+
+		self._initialize()
 
 		self._ee_image = image
 
@@ -326,8 +332,12 @@ class Image:
 						print(i)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
-		if self.task is not None:
-			new_status = self.task.status()
+
+		if self.task is None:
+			raise ValueError('Error checking task status. Task is None. It likely means that the export task was not'
+							 ' properly created and the code needs to be re-run.')
+
+		new_status = self.task.status()
 
 		changed = False
 		if self._last_task_status != new_status:
