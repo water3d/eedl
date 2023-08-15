@@ -133,7 +133,7 @@ class Image:
 
 		# Check if the path is valid before we do anything else
 
-		self.drive_root_folder: Optional[str] = None
+		self.drive_root_folder: Optional[str, Path] = None
 		self.crs: Optional[str] = None
 		self.tile_size: Optional[int] = None
 		self.export_folder: Optional[Union[str, Path]] = None
@@ -156,8 +156,6 @@ class Image:
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # other option is "Cloud"
 
-		self.drive_root_folder = drive_root_folder
-
 		self.filename_description = ""
 
 	def _set_names(self, filename_prefix: str = "") -> None:
@@ -177,18 +175,18 @@ class Image:
 				filename_prefix: str,
 				export_type: str = "Drive",
 				clip: Optional[ee.geometry.Geometry] = None,
-			   	drive_root_folder: Optional[Union[str, Path]] = None,
+				drive_root_folder: Optional[Union[str, Path]] = None,
 				**export_kwargs) -> None:
 
 		# If image does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
 
-		if export_type == "Drive" and not os.path.exists(drive_root_folder):
+		if export_type == "Drive" and (drive_root_folder is None or not os.path.exists(drive_root_folder)):
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
-									 " Drive export was specified. Either change the export type to use Google Cloud"
-									 " and set that up properly (with a bucket, etc), or set the drive_root_folder"
-									 " to a valid folder")
+										" Drive export was specified. Either change the export type to use Google Cloud"
+										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
+										" to a valid folder")
 		elif export_type == "Drive":
 			self.drive_root_folder = drive_root_folder
 
