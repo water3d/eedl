@@ -298,7 +298,7 @@ class Image:
 
 			zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, self.mosaic_image, stats=stats, geojson_out=True, nodata=-9999)
 
-			fieldnames = stats + keep_fields
+			fieldnames = (*stats, *keep_fields)
 
 			# here's a first approach that still stores a lot in memory - it's commented out because we're instead
 			# going to just generate them one by one and write them to a file directly.
