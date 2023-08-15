@@ -13,8 +13,6 @@ from ee import EEException
 from . import google_cloud
 from . import mosaic_rasters
 
-
-
 DEFAULTS = dict(
 	CRS='EPSG:4326',
 	TILE_SIZE=12800,
@@ -336,7 +334,7 @@ class Image:
 
 		if self.task is None:
 			raise ValueError('Error checking task status. Task is None. It likely means that the export task was not'
-							 ' properly created and the code needs to be re-run.')
+							' properly created and the code needs to be re-run.')
 
 		new_status = self.task.status()
 
