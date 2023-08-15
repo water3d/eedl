@@ -1,8 +1,13 @@
 name: Unit Tests - No Conda
 
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - 'release'
+      - 'development'
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   Test-Package:
