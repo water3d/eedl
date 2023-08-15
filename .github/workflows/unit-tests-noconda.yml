@@ -16,20 +16,12 @@ jobs:
       max-parallel: 4
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11",]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
-      - name: Create Conda Environment
-        if: matrix.os ==  'windows-latest'
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-activate-base: true
-          python-version: ${{ matrix.python-version }}
-          channels: conda-forge
 
       - name: Set Up Python Ubuntu
         uses: actions/setup-python@v4
@@ -57,16 +49,6 @@ jobs:
           python -m pip install 'gdal==${{ env.OGRVERSION }}'
           python -m pip install -r requirements.txt
 
-      - name: Install Dependencies Windows
-        if: matrix.os ==  'windows-latest'
-        run: |
-          conda install pip "tox<4"
-          pip install "tox-gh-actions<2" tox-conda
-
-      - name: Test with tox
-        if: matrix.os == 'windows-latest'
-        shell: bash -el {0}
-        run: tox --skip-pkg-install
 
       - name: Test with Pytest
         if: matrix.os ==  'ubuntu-latest'
