@@ -193,12 +193,6 @@ class Image:
 
 		self._set_names(filename_prefix)
 
-		# Get a silent error if clip is not of type ee.geometry.Geometry
-		if isinstance(clip, ee.geometry.Geometry):
-			self._ee_image = self._ee_image.clip(clip)
-		elif clip:
-			raise ValueError("Invalid geometry provided for export")
-
 		ee_kwargs = {
 			'description': self.description,
 			'fileNamePrefix': self.filename,
@@ -208,6 +202,13 @@ class Image:
 			'fileDimensions': self.tile_size,
 			'crs': self.crs
 		}
+
+		# Get a silent error if clip is not of type ee.geometry.Geometry
+		if isinstance(clip, ee.geometry.Geometry):
+			ee_kwargs["region"] = self._ee_image.clip(clip)
+		elif clip:
+			raise ValueError("Invalid geometry provided for export")
+
 		# override any of these defaults with anything else provided
 		ee_kwargs.update(export_kwargs)
 
