@@ -1,16 +1,16 @@
 import csv
 import os
 from pathlib import Path
-from typing import Dict, Tuple, Union
+from typing import Dict, Iterable, Union
 
 import fiona
 import rasterstats
 
 
-def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, str]:
+def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
 	"""
-		A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-		to do this, but it'll work in many situations
+	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
+	to do this, but it'll work in many situations
 	:param polygon_path:
 	:return:
 	"""
@@ -27,8 +27,8 @@ def zonal_stats(polygons: Union[str, Path],
 				raster: Union[str, Path],
 				output_folder: Union[str, Path],
 				filename: str,
-				keep_fields: Tuple[str] = ("UniqueID", "CLASS2"),
-				stats: Tuple[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
+				keep_fields: Iterable[str] = ("UniqueID", "CLASS2"),
+				stats: Iterable[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 				report_threshold: int = 1000,
 				write_batch_size: int = 2000,
 				**kwargs) -> None:
@@ -62,7 +62,7 @@ def zonal_stats(polygons: Union[str, Path],
 
 		zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
 
-		fieldnames = stats + keep_fields
+		fieldnames = (*stats, *keep_fields)
 
 		# here's a first approach that still stores a lot in memory - it's commented out because we're instead
 		# going to just generate them one by one and write them to a file directly.

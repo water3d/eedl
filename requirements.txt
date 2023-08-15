@@ -1,9 +1,10 @@
-earthengine-api
 gdal
+rasterstats
+earthengine-api
 fiona
 pandas
-seaborn>=0.12.0
-rasterstats
+seaborn
 google-cloud-storage
 setuptools
 requests
+pytest

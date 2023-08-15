@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[[tool.mypy.overrides]]
+module = [
+    'osgeo',
+    'fiona',
+    'rasterstats',
+    'ee',
+    'seaborn'
+    ]
+ignore_missing_imports = true

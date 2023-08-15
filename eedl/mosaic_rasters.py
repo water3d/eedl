@@ -1,8 +1,7 @@
 import os
 import tempfile
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Union
+from typing import Sequence, Union
 
 from osgeo import gdal
 
@@ -12,12 +11,12 @@ def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], 
 	mosaic_rasters(tifs, output_path)
 
 
-def mosaic_rasters(raster_paths: Iterable[Union[str, Path]],
+def mosaic_rasters(raster_paths: Sequence[Union[str, Path]],
 					output_path: Union[str, Path],
 					add_overviews: bool = True) -> None:
 	"""
-		Adapted from https://gis.stackexchange.com/a/314580/1955 and
-		https://www.gislite.com/tutorial/k8024 along with other basic lookups on GDAL Python bindings
+	Adapted from https://gis.stackexchange.com/a/314580/1955 and
+	https://www.gislite.com/tutorial/k8024 along with other basic lookups on GDAL Python bindings
 	:param raster_paths:
 	:param output_path:
 	:param add_overviews:
