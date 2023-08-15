@@ -23,4 +23,4 @@ jobs:
       - name: mypy check
         run: |
           pip install mypy types-requests pandas-stubs
-          mypy
+          mypy -p eedl
