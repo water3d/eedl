@@ -133,7 +133,7 @@ class Image:
 
 		# Check if the path is valid before we do anything else
 
-		self.drive_root_folder: Optional[str, Path] = None
+		self.drive_root_folder: Optional[Union[str, Path]] = None
 		self.crs: Optional[str] = None
 		self.tile_size: Optional[int] = None
 		self.export_folder: Optional[Union[str, Path]] = None
