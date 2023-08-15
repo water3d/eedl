@@ -127,15 +127,13 @@ class Image:
 	This docstring needs to be checked to ensure it's in a standard format that Sphinx will render
 	"""
 
-	def __init__(self, drive_root_folder: Union[str, Path], **kwargs) -> None:
+	def __init__(self, **kwargs) -> None:
 		# TODO: We shouldn't define a default drive root folder. This should always be provided by the user,
 		#  but we need to figure out where in the workflow this happens.
 
 		# Check if the path is valid before we do anything else
 
-		if not os.path.exists(drive_root_folder):
-			raise NotADirectoryError("The provided path is not a valid directory")
-
+		self.drive_root_folder: Optional[str] = None
 		self.crs: Optional[str] = None
 		self.tile_size: Optional[int] = None
 		self.export_folder: Optional[Union[str, Path]] = None
@@ -179,11 +177,20 @@ class Image:
 				filename_prefix: str,
 				export_type: str = "Drive",
 				clip: Optional[ee.geometry.Geometry] = None,
+			   	drive_root_folder: Optional[Union[str, Path]] = None,
 				**export_kwargs) -> None:
 
 		# If image does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
+
+		if export_type == "Drive" and not os.path.exists(drive_root_folder):
+			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
+									 " Drive export was specified. Either change the export type to use Google Cloud"
+									 " and set that up properly (with a bucket, etc), or set the drive_root_folder"
+									 " to a valid folder")
+		elif export_type == "Drive":
+			self.drive_root_folder = drive_root_folder
 
 		self._initialize()
 
