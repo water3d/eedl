@@ -1,13 +1,13 @@
+import os
 import pandas
 import pytest  # noqa
 
 from eedl import zonal
-
-
+from . import TEST_DIR
 def test_zonal_centroids():
-	features = r"C:\Users\dsx\CodeLocal\eedl\tests\data\test_vectors.gpkg\test_polys_centroids"
-	raster = r"C:\Users\dsx\CodeLocal\eedl\tests\data\_ee_export_test_image.tif"
-	output_folder = r"C:\Users\dsx\CodeLocal\eedl\tests\test_outputs"
+	features = TEST_DIR / "data" / "test_vectors.gpkg" / "test_polys_centroids"
+	raster = TEST_DIR / "data" / "_ee_export_test_image.tif"
+	output_folder = TEST_DIR / "test_outputs"
 	filename = "test_results"
 	keep_fields = ("UniqueID", "expected_centroid_value")
 	stats = ()
