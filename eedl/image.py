@@ -276,7 +276,7 @@ class Image:
 					stats: Tuple = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
-					use_centroids: bool = False,
+					use_points: bool = False,
 					) -> None:
 		"""
 
@@ -286,6 +286,7 @@ class Image:
 		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000.
 		Set to None to disable
 		:param write_batch_size: How many zones should we store up before writing to the disk?
+		:param use_points:
 		:return:
 
 		"""
@@ -298,7 +299,7 @@ class Image:
 						  stats=stats,
 						  report_threshold=report_threshold,
 						  write_batch_size=write_batch_size,
-						  use_centroids=use_centroids)
+						  use_points=use_points)
 
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:

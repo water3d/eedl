@@ -23,7 +23,7 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 		return {'fp': polygon_path}
 
 
-def zonal_stats(polygons: Union[str, Path],
+def zonal_stats(features: Union[str, Path],
 				raster: Union[str, Path],
 				output_folder: Union[str, Path],
 				filename: str,
@@ -31,14 +31,14 @@ def zonal_stats(polygons: Union[str, Path],
 				stats: Iterable[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 				report_threshold: int = 1000,
 				write_batch_size: int = 2000,
-				use_centroids: bool = False,
-				**kwargs) -> None:
+				use_points: bool = False,
+				**kwargs) -> Union[str, Path, None]:
 	# TODO: Make this check if raster and polys are in the same CRS - if they're not, then rasterstats doesn't
 	#  automatically align them and we just get bad output.
 
 	"""
 
-	:param polygons:
+	:param features:
 	:param raster:
 	:param output_folder:
 	:param filename:
@@ -46,6 +46,13 @@ def zonal_stats(polygons: Union[str, Path],
 	:param stats:
 	:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000. Set to None to disable
 	:param write_batch_size: How many zones should we store up before writing to the disk?
+	:param use_points: Switches rasterstats to extract using gen_point_query instead of gen_zonal_stats. See rasterstats
+		package documentation for complete information. get_point_query will get the values of a raster at all vertex
+		locations when provided with a polygon or line. If provided points, it will extract those point values. We set
+		interpolation to nearest to perform an exact extraction of the cell values. In this codebase's usage, it's
+		assumed that the "features" paramter to this function will be a points dataset (still in the same CRS as the raster)
+		when use_points is True. Additionally, when this is True, the `stats` argument to this function is ignored
+		as only a single value will be extracted as the attribute `value` in the output CSV. default is False.
 	:param kwargs: passed through to rasterstats
 	:return:
 	"""
@@ -55,20 +62,27 @@ def zonal_stats(polygons: Union[str, Path],
 
 	# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
 	# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
-	kwargs = _get_fiona_args(polygons)
+	kwargs = _get_fiona_args(features)
 	main_file_path = kwargs['fp']
 	del kwargs['fp']
 
-	with fiona.open(main_file_path, **kwargs) as polys_open:
+	output_filepath: Union[str, None] = None
 
-		if not use_centroids:  # if we want to do zonal, open a zonal stats generator
-			zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
+	with fiona.open(main_file_path, **kwargs) as feats_open:
+
+		if not use_points:  # if we want to do zonal, open a zonal stats generator
+			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
 			fieldnames = (*stats, *keep_fields)
 			filesuffix = "zonal_stats"
 		else:  # otherwise open a point query generator
 			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
-			zstats_results_geo = rasterstats.gen_point_query(polys_open, raster, geojson_out=True, nodata=-9999, **kwargs)
-			fieldnames = (*keep_fields,)
+			zstats_results_geo = rasterstats.gen_point_query(feats_open,
+																raster,
+																geojson_out=True,  # need this to get extra attributes back
+																nodata=-9999,
+																interpolate="nearest",  # we need this or else rasterstats uses a mix of nearby cells, even for single points
+																**kwargs)
+			fieldnames = ("value", *keep_fields,)  # when doing point queries, we get a field called "value" back with the raster value
 			filesuffix = "point_query"
 
 		# here's a first approach that still stores a lot in memory - it's commented out because we're instead
@@ -81,7 +95,8 @@ def zonal_stats(polygons: Union[str, Path],
 		# zstats_results_geo]
 
 		i = 0
-		with open(os.path.join(output_folder, f"{filename}_{filesuffix}.csv"), 'w', newline='') as csv_file:
+		output_filepath = os.path.join(output_folder, f"{filename}_{filesuffix}.csv")
+		with open(output_filepath, 'w', newline='') as csv_file:
 			writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 			writer.writeheader()
 			results = []
@@ -102,6 +117,11 @@ def zonal_stats(polygons: Union[str, Path],
 				if report_threshold and i % report_threshold == 0:
 					print(i)
 
+			if len(results) > 0:  # clear out any remaining items at the end
+				writer.writerows(results)
+				print(i)
+
+	return output_filepath
 
 def run_data_2018_baseline() -> None:
 	datasets = [
