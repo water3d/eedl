@@ -31,6 +31,7 @@ def zonal_stats(polygons: Union[str, Path],
 				stats: Iterable[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 				report_threshold: int = 1000,
 				write_batch_size: int = 2000,
+				use_centroids: bool = False,
 				**kwargs) -> None:
 	# TODO: Make this check if raster and polys are in the same CRS - if they're not, then rasterstats doesn't
 	#  automatically align them and we just get bad output.
@@ -60,9 +61,15 @@ def zonal_stats(polygons: Union[str, Path],
 
 	with fiona.open(main_file_path, **kwargs) as polys_open:
 
-		zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
-
-		fieldnames = (*stats, *keep_fields)
+		if not use_centroids:  # if we want to do zonal, open a zonal stats generator
+			zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
+			fieldnames = (*stats, *keep_fields)
+			filesuffix = "zonal_stats"
+		else:  # otherwise open a point query generator
+			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
+			zstats_results_geo = rasterstats.gen_point_query(polys_open, raster, geojson_out=True, nodata=-9999, **kwargs)
+			fieldnames = (*keep_fields,)
+			filesuffix = "point_query"
 
 		# here's a first approach that still stores a lot in memory - it's commented out because we're instead
 		# going to just generate them one by one and write them to a file directly.
@@ -74,7 +81,7 @@ def zonal_stats(polygons: Union[str, Path],
 		# zstats_results_geo]
 
 		i = 0
-		with open(os.path.join(output_folder, f"{filename}_zstats.csv"), 'w', newline='') as csv_file:
+		with open(os.path.join(output_folder, f"{filename}_{filesuffix}.csv"), 'w', newline='') as csv_file:
 			writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 			writer.writeheader()
 			results = []
