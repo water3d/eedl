@@ -1,9 +1,11 @@
-import os
+
 import pandas
 import pytest  # noqa
 
 from eedl import zonal
 from . import TEST_DIR
+
+
 def test_zonal_centroids():
 	features = TEST_DIR / "data" / "test_vectors.gpkg" / "test_polys_centroids"
 	raster = TEST_DIR / "data" / "_ee_export_test_image.tif"
