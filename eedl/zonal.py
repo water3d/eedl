@@ -24,8 +24,8 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 
 
 def zonal_stats(features: Union[str, Path],
-				raster: Union[str, Path],
-				output_folder: Union[str, Path],
+				raster: Union[str, Path, None],
+				output_folder: Union[str, Path, None],
 				filename: str,
 				keep_fields: Iterable[str] = ("UniqueID", "CLASS2"),
 				stats: Iterable[str] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
@@ -95,7 +95,7 @@ def zonal_stats(features: Union[str, Path],
 		# zstats_results_geo]
 
 		i = 0
-		output_filepath = os.path.join(output_folder, f"{filename}_{filesuffix}.csv")
+		output_filepath = os.path.join(str(output_folder), f"{filename}_{filesuffix}.csv")
 		with open(output_filepath, 'w', newline='') as csv_file:
 			writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 			writer.writeheader()
@@ -122,6 +122,7 @@ def zonal_stats(features: Union[str, Path],
 				print(i)
 
 	return output_filepath
+
 
 def run_data_2018_baseline() -> None:
 	datasets = [

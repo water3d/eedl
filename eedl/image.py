@@ -1,4 +1,3 @@
-import csv
 import os
 import shutil
 import time
@@ -6,8 +5,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import ee
-import fiona
-import rasterstats
 from ee import EEException
 
 from . import google_cloud
@@ -138,7 +135,7 @@ class Image:
 		self.crs: Optional[str] = None
 		self.tile_size: Optional[int] = None
 		self.export_folder: Optional[Union[str, Path]] = None
-		self.mosaic_image: Optional[str] = None
+		self.mosaic_image: Optional[Union[str, Path]] = None
 		self.task: Optional[ee.batch.Task] = None
 		self.bucket: Optional[str] = None
 		self._ee_image: Optional[ee.image.Image] = None
@@ -292,15 +289,14 @@ class Image:
 		"""
 
 		zonal.zonal_stats(polygons,
-						  self.mosaic_image,
-						  self.output_folder,
-						  self.filename,
-						  keep_fields=keep_fields,
-						  stats=stats,
-						  report_threshold=report_threshold,
-						  write_batch_size=write_batch_size,
-						  use_points=use_points)
-
+							self.mosaic_image,
+							self.output_folder,
+							self.filename,
+							keep_fields=keep_fields,
+							stats=stats,
+							report_threshold=report_threshold,
+							write_batch_size=write_batch_size,
+							use_points=use_points)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 
