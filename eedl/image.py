@@ -1,4 +1,3 @@
-import csv
 import os
 import shutil
 import time
@@ -6,12 +5,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import ee
-import fiona
-import rasterstats
 from ee import EEException
 
 from . import google_cloud
 from . import mosaic_rasters
+from . import zonal
 
 DEFAULTS = dict(
 	CRS='EPSG:4326',
@@ -137,7 +135,7 @@ class Image:
 		self.crs: Optional[str] = None
 		self.tile_size: Optional[int] = None
 		self.export_folder: Optional[Union[str, Path]] = None
-		self.mosaic_image: Optional[str] = None
+		self.mosaic_image: Optional[Union[str, Path]] = None
 		self.task: Optional[ee.batch.Task] = None
 		self.bucket: Optional[str] = None
 		self._ee_image: Optional[ee.image.Image] = None
@@ -274,7 +272,9 @@ class Image:
 					keep_fields: Tuple = ("UniqueID", "CLASS2"),
 					stats: Tuple = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 					report_threshold: int = 1000,
-					write_batch_size: int = 2000) -> None:
+					write_batch_size: int = 2000,
+					use_points: bool = False,
+					) -> None:
 		"""
 
 		:param polygons:
@@ -283,57 +283,20 @@ class Image:
 		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000.
 		Set to None to disable
 		:param write_batch_size: How many zones should we store up before writing to the disk?
+		:param use_points:
 		:return:
 
 		"""
-		# note use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on
-		# the next line, each item isn't evaluated, which should prevent us from needing to store a geojson
-		# representation of all the polygons at one time since we'll strip it off (it'd be reallllly bad to try to
-		# keep all of it
 
-		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item,
-		# then providing anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
-		kwargs = _get_fiona_args(polygons)
-		main_file_path = kwargs['fp']
-		del kwargs['fp']
-
-		with fiona.open(main_file_path, **kwargs) as polys_open:
-
-			zstats_results_geo = rasterstats.gen_zonal_stats(polys_open, self.mosaic_image, stats=stats, geojson_out=True, nodata=-9999)
-
-			fieldnames = (*stats, *keep_fields)
-
-			# here's a first approach that still stores a lot in memory - it's commented out because we're instead
-			# going to just generate them one by one and write them to a file directly.
-			#
-			# ok, so this next line is doing a lot of work. It's a dictionary comprehension inside a list
-			# comprehension - we're going through each item in the results, then accessing just the properties key
-			# and constructing a new dictionary just for the keys we want to keep - the keep fields (the key and a
-			# class field by default) and the stats fields zstats_results = [{key: poly['properties'][key] for key
-			# in fieldnames} for poly in zstats_results_geo]
-
-			i = 0
-			with open(os.path.join(str(self.output_folder), f"{self.filename}_zstats.csv"), 'w', newline='') as csv_file:
-				writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-				writer.writeheader()
-				results = []
-				# get the result for the polygon, then filter the keys with the dictionary comprehension below
-				for poly in zstats_results_geo:
-					result = {key: poly['properties'][key] for key in fieldnames}
-
-					for key in result:  # truncate the floats
-						if type(result[key]) is float:
-							result[key] = f"{result[key]:.5f}"
-
-					i += 1
-					results.append(result)
-					if i % write_batch_size == 0:
-						# then write the lone result out one at a time to not store it all in RAM
-						writer.writerows(results)
-						results = []
-
-					if report_threshold and i % report_threshold == 0:
-						print(i)
+		zonal.zonal_stats(polygons,
+							self.mosaic_image,
+							self.output_folder,
+							self.filename,
+							keep_fields=keep_fields,
+							stats=stats,
+							report_threshold=report_threshold,
+							write_batch_size=write_batch_size,
+							use_points=use_points)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 

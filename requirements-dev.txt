@@ -1,0 +1,4 @@
+flake8
+mypy
+pandas-stubs
+types-requests
