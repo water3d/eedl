@@ -257,7 +257,7 @@ class Image:
 		:type new_status: Dict[str, str]
 		:return:  None
 		"""
-		_last_task_status = new_status
+		self._last_task_status = new_status
 
 	def export(self,
 				image: ee.image.Image,
