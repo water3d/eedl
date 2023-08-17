@@ -7,6 +7,16 @@ from osgeo import gdal
 
 
 def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: str = "") -> None:
+	"""
+
+	:param folder_path: Location of the folder
+	:type folder_path: Union[str, Path]
+	:param output_path: Output destination
+	:type output_path: Union[str, Path]
+	:param prefix: Used to find the files of interest.
+	:type prefix: Str
+	:return: None
+	"""
 	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
 	mosaic_rasters(tifs, output_path)
 
@@ -17,10 +27,14 @@ def mosaic_rasters(raster_paths: Sequence[Union[str, Path]],
 	"""
 	Adapted from https://gis.stackexchange.com/a/314580/1955 and
 	https://www.gislite.com/tutorial/k8024 along with other basic lookups on GDAL Python bindings
-	:param raster_paths:
-	:param output_path:
+
+	:param raster_paths: Location of the raster
+	:type raster_paths: Sequence[Union[str, Path]]
+	:param output_path: Output destination
+	:type output_path: Union[str, Path]
 	:param add_overviews:
-	:return:
+	:type add_overviews: Bool
+	:return: None
 	"""
 
 	# gdal.SetConfigOption("GTIFF_SRC_SOURCE", "GEOKEYS")

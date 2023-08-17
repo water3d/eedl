@@ -22,9 +22,12 @@ DEFAULTS = dict(
 def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
 	"""
 	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-	to do this, but it'll work in many situations
-	:param polygon_path:
-	:return:
+	to do this, but it'll work in many situations.
+
+	:param polygon_path: File location of polygons.
+	:type polygon_path: Union[str, Path]
+	:return: Returns the full path and, depending on the file format, the file name in a dictionary.
+	:rtype: Dict[str, Union[str, Path]]
 	"""
 
 	parts = os.path.split(polygon_path)
@@ -38,10 +41,14 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
 	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
-	:param source_location:
-	:param download_location:
-	:param prefix:
-	:return:
+
+	:param source_location: Directory to search for files
+	:type source_location: Union[str, Path]
+	:param download_location: Destination for files with the specified prefix
+	:type download_location: Union[str, Path]
+	:param prefix: A prefix to use to filter items in the folder - only files where the name matches this prefix will be moved
+	:type prefix: str
+	:return: None
 	"""
 	folder_search_path: Union[str, Path] = source_location
 	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
@@ -53,34 +60,71 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 
 
 class TaskRegistry:
+	"""
+	The TaskRegistry class makes it convent to manage arbitrarily many Earth Engine images that are in varying states of being downloaded.
+	"""
 	INCOMPLETE_STATUSES = ("READY", "UNSUBMITTED", "RUNNING")
 	COMPLETE_STATUSES = ["COMPLETED"]
 	FAILED_STATUSES = ["CANCEL_REQUESTED", "CANCELLED", "FAILED"]
 
 	def __init__(self) -> None:
+		"""
+		Initialized the TaskRegistry class and defaults images to "[]" and the callback function to "None"
+		:return: None
+		"""
 		self.images: List[Image] = []
 		self.callback: Optional[str] = None
 
-	def add(self, image) -> None:
+	def add(self, image: ee.image.Image) -> None:
+		"""
+		Adds an Earth Engine image to the list of Earth Engine images
+
+		:param image: Earth Engine image to be added to the list of images
+		:type image: ee.image.Image
+		:return: None
+		"""
 		self.images.append(image)
 
 	@property
 	def incomplete_tasks(self) -> List[ee.image.Image]:
-		initial_tasks = [image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
+		"""
+		List of Earth Engine images that have not been completed yet
+
+		:return: List of Earth Engine images that have not been completed yet
+		:rtype: List[ee.image.Image]
+		"""
+		initial_tasks = [image for image in self.images if image.last_task_status['state'] in self.INCOMPLETE_STATUSES]
 		for image in initial_tasks:  # update anything that's currently running or waiting first
 			image._check_task_status()
 
-		return [image for image in self.images if image._last_task_status['state'] in self.INCOMPLETE_STATUSES]
+		return [image for image in self.images if image.last_task_status['state'] in self.INCOMPLETE_STATUSES]
 
 	@property
 	def complete_tasks(self) -> List[ee.image.Image]:
-		return [image for image in self.images if image._last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
+		"""
+		List of Earth Engine images
+
+		:return: List of Earth Engine images
+		:rtype: List[ee.image.Image]
+		"""
+		return [image for image in self.images if image.last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
 	def downloadable_tasks(self) -> List[ee.image.Image]:
-		return [image for image in self.complete_tasks if image.task_data_downloaded is False and image._last_task_status['state'] not in self.FAILED_STATUSES]
+		"""
+		List of Earth Engine images that have successfully been downloaded
+		:return: List of Earth Engine images that have successfully been downloaded
+		:rtype: List[ee.image.Image]
+		"""
+		return [image for image in self.complete_tasks if image.task_data_downloaded is False and image.last_task_status['state'] not in self.FAILED_STATUSES]
 
 	def download_ready_images(self, download_location: Union[str, Path]) -> None:
+		"""
+
+		:param download_location: Destination for downloaded files
+		:type download_location: Union[str, Path]
+		:return: None
+		"""
 		for image in self.downloadable_tasks:
 			print(f"{image.filename} is ready for download")
 			image.download_results(download_location=download_location, callback=self.callback)
@@ -90,6 +134,19 @@ class TaskRegistry:
 						sleep_time: int = 10,
 						callback: Optional[str] = None,
 						try_again_disk_full: bool = True) -> None:
+		"""
+		Blocker until there are no more incomplete or downloadable tasks left.
+
+		:param download_location: Destination for downloaded files.
+		:type download_location: Union[str, Path]
+		:param sleep_time: Time between checking if the disk is full in seconds. Defaults to 10 seconds.
+		:type sleep_time: int
+		:param callback: Optional callback function. Executed after image has been downloaded.
+		:type callback: Optional[str]
+		:param try_again_disk_full: Will continuously retry to download images that are ready if disk is full.
+		:type try_again_disk_full: bool
+		:return: None
+		"""
 
 		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
@@ -119,17 +176,20 @@ class Image:
 	directly to the class and override any defaults. Options include:
 
 	:param crs: Coordinate Reference System to use for exports in a format Earth Engine understands, such as "EPSG:3310"
+	:type crs: Optional[str]
 	:param tile_size: the number of pixels per side of tiles to export
+	:type tile_size: Optional[int]
 	:param export_folder: the name of the folder in the chosen export location that will be created for the export
+	:type export_folder: Optional[Union[str, Path]]
 
 	This docstring needs to be checked to ensure it's in a standard format that Sphinx will render
 	"""
 
 	def __init__(self, **kwargs) -> None:
-		# TODO: We shouldn't define a default drive root folder. This should always be provided by the user,
-		#  but we need to figure out where in the workflow this happens.
+		"""
 
-		# Check if the path is valid before we do anything else
+		:return: None
+		"""
 
 		self.drive_root_folder: Optional[Union[str, Path]] = None
 		self.crs: Optional[str] = None
@@ -156,43 +216,89 @@ class Image:
 
 		self.filename_description = ""
 
-	def _set_names(self, filename_prefix: str = "") -> None:
-		self.description = filename_prefix
-		self.filename = f"{self.filename_description}_{filename_prefix}"
+	def _set_names(self, filename_suffix: str = "") -> None:
+		"""
+
+		:param filename_suffix: Suffix used to later identify files.
+		:type filename_suffix: Str
+		:return: None
+		"""
+		self.description = filename_suffix
+		self.filename = f"{self.filename_description}_{filename_suffix}"
 
 	@staticmethod
 	def _initialize() -> None:
+		"""
+		Handles the initialization and potentially the authentication of Earth Engine
+
+		:return: None
+		"""
 		try:
 			ee.Initialize()
 		except EEException:
 			ee.Authenticate()
 			ee.Initialize()
 
+	@property
+	def last_task_status(self) -> Dict[str, str]:
+		"""
+		Allows reading the private variable "_last_task_status"
+		:return: return the private variable "_last_task_status"
+		:rtype: Dict[str, str]
+		"""
+		return self._last_task_status
+
+	@last_task_status.setter
+	def last_task_status(self, new_status: Dict[str, str]) -> None:
+		"""
+		Sets the value of the private variable "_last_task_status" to a specified value
+
+		:param new_status: Updated status
+		:type new_status: Dict[str, str]
+		:return:  None
+		"""
+		_last_task_status = new_status
+
 	def export(self,
 				image: ee.image.Image,
-				filename_prefix: str,
-				export_type: str = "Drive",
+				filename_suffix: str,
+				export_type: str = "drive",
 				clip: Optional[ee.geometry.Geometry] = None,
 				drive_root_folder: Optional[Union[str, Path]] = None,
 				**export_kwargs) -> None:
+		"""
+		Handles the exporting of an image
 
-		# If image does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
+		:param image: Image for export
+		:type image: ee.image.Image
+		:param filename_suffix: The unique identifier used internally to identify images.
+		:type filename_suffix: Str
+		:param export_type: Specifies how the image should be exported. Either "cloud" or "drive". Defaults to "drive".
+		:type export_type: Str
+		:param clip: Defines the clip that should be used
+		:type clip: Optional[ee.geometry.Geometry]
+		:param drive_root_folder: The folder for exporting if "drive" is selected
+		:type drive_root_folder: Optional[Union[str, Path]]
+		:return: None
+		"""
+
+		# If "image" does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
 
-		if export_type == "Drive" and (drive_root_folder is None or not os.path.exists(drive_root_folder)):
+		if export_type.lower() == "drive" and (drive_root_folder is None or not os.path.exists(drive_root_folder)):
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
 										" Drive export was specified. Either change the export type to use Google Cloud"
 										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
 										" to a valid folder")
-		elif export_type == "Drive":
+		elif export_type.lower() == "drive":
 			self.drive_root_folder = drive_root_folder
 
 		self._initialize()
 
 		self._ee_image = image
 
-		self._set_names(filename_prefix)
+		self._set_names(filename_suffix)
 
 		ee_kwargs = {
 			'description': self.description,
@@ -236,7 +342,11 @@ class Image:
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None) -> None:
 		"""
 
-		:return:
+		:param download_location: The directory where the results should be downloaded to
+		:type download_location: Union[str, Path]
+		:param callback: The callback function called once the image is downloaded
+		:type callback: Optional[str]
+		:return: None
 		"""
 		# need an event loop that checks self.task.status(), which
 		# will get the current state of the task
@@ -264,13 +374,18 @@ class Image:
 			callback_func()
 
 	def mosaic(self) -> None:
+		"""
+		Mosaics the individual images into the full image
+
+		:return: None
+		"""
 		self.mosaic_image = os.path.join(str(self.output_folder), f"{self.filename}_mosaic.tif")
 		mosaic_rasters.mosaic_folder(str(self.output_folder), self.mosaic_image, prefix=self.filename)
 
 	def zonal_stats(self,
 					polygons: Union[str, Path],
-					keep_fields: Tuple = ("UniqueID", "CLASS2"),
-					stats: Tuple = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
+					keep_fields: Tuple[str, ...] = ("UniqueID", "CLASS2"),
+					stats: Tuple[str, ...] = ('min', 'max', 'mean', 'median', 'std', 'count', 'percentile_10', 'percentile_90'),
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
@@ -278,13 +393,19 @@ class Image:
 		"""
 
 		:param polygons:
+		:type polygons: Union[str, Path]
 		:param keep_fields:
+		:type keep_fields: tuple[str, ...]
 		:param stats:
+		:type stats: Tuple[str, ...]
 		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000.
-		Set to None to disable
-		:param write_batch_size: How many zones should we store up before writing to the disk?
+			Set to None to disable
+		:type report_threshold: int
+		:param write_batch_size: How many zones should we store up before writing to the disk? Defaults to 2000
+		:type write_batch_size: int
 		:param use_points:
-		:return:
+		:type use_points: bool
+		:return: None
 
 		"""
 
@@ -299,6 +420,12 @@ class Image:
 							use_points=use_points)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
+		"""
+		Updates the status is it needs to be changed
+
+		:return: Returns a dictionary of the most up-to-date status and whether it was changed
+		:rtype: Dict[str, Union[Dict[str, str], bool]]
+		"""
 
 		if self.task is None:
 			raise ValueError('Error checking task status. Task is None. It likely means that the export task was not'
@@ -307,8 +434,8 @@ class Image:
 		new_status = self.task.status()
 
 		changed = False
-		if self._last_task_status != new_status:
+		if self.last_task_status != new_status:
 			changed = True
-			self._last_task_status = new_status
+			self.last_task_status = new_status
 
-		return {'status': self._last_task_status, 'changed': changed}
+		return {'status': self.last_task_status, 'changed': changed}
