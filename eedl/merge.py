@@ -14,12 +14,18 @@ def merge_outputs(file_mapping,
 					sqlite_table: Optional[str] = None) -> pandas.DataFrame:
 	"""
 	Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
-	can optionally insert into a sqlite database
-	:param file_mapping: a set of tuples with a path to a file and a time value (string or datetime) to associate with it.
-	:param date_field:
-	:param sqlite_db:
-	:param sqlite_table:
-	:return: pandas data frame with all file data and times
+	can optionally insert into a sqlite database.
+
+	:param file_mapping: A set of tuples with a path to a file and a time value (string or datetime) to associate with it.
+	:type file_mapping:
+	:param date_field: Defaults to "et_date".
+	:type date_field: str
+	:param sqlite_db: Name of a sqlite database.
+	:type sqlite_db: Optional[str]
+	:param sqlite_table: Name of a table in the database.
+	:type sqlite_table: Optional[str]
+	:return: Pandas data frame with all file and time data.
+	:rtype: pandas.DataFrame
 	"""
 
 	dfs = []
@@ -42,7 +48,20 @@ def merge_outputs(file_mapping,
 	return final_df
 
 
-def plot_merged(df: pandas.DataFrame, et_field, date_field: str = "et_date", uniqueid: str = "UniqueID") -> so.Plot:
+def plot_merged(df: pandas.DataFrame, et_field: str, date_field: str = "et_date", uniqueid: str = "UniqueID") -> so.Plot:
+	"""
+
+	:param df: Data source for the plot
+	:type df: pandas.DataFrame
+	:param et_field: Name of the variable on the x-axis
+	:type et_field: str
+	:param date_field: Name of the variable on the y-axis. Default is "et_date"
+	:type date_field: str
+	:param uniqueid: Defines additional data subsets that transforms should operate on independently. Default is "UniqueID"
+	:type uniqueid: str
+	:return: Returns a seaborn object plot
+	:rtype: so.Plot
+	"""
 	return (
 		so.Plot(df,
 				x=date_field,
