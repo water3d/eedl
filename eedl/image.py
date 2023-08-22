@@ -111,7 +111,7 @@ class TaskRegistry:
 
 	@property
 	def failed_tasks(self) -> List[ee.image.Image]:
-		return [image for image in self.images if image._last_task_status['state'] in self.FAILED_STATUSES]
+		return [image for image in self.images if image.last_task_status['state'] in self.FAILED_STATUSES]
 
 	@property
 	def downloadable_tasks(self) -> List[ee.image.Image]:
@@ -168,8 +168,8 @@ class TaskRegistry:
 
 		if on_failure == "raise" and len(self.failed_tasks) > 0:
 			raise EEException(f"{len(self.failed_tasks)} images failed to export. Example error message from first"
-								f" failed image \"{self.failed_tasks[0]._last_task_status['description']}\" was"
-								f" \"{self.failed_tasks[0]._last_task_status['error_message']}\"."
+								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was"
+								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"."
 								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
 								f" messages for all export tasks.")
 
@@ -266,7 +266,8 @@ class Image:
 	@last_task_status.setter
 	def last_task_status(self, new_status: Dict[str, str]) -> None:
 		"""
-		Sets the value of the private variable "_last_task_status" to a specified value
+		Sets the value of the private variable "_last_task_status" to a specified value. Realistically, this shouldn't
+		be used as the value should only be set from within the object, but it's here in case it's needed.
 
 		:param new_status: Updated status
 		:type new_status: Dict[str, str]

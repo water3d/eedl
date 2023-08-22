@@ -36,7 +36,7 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 	# export the annual image and queue it for download
 	annual_export_image = Image(crs="EPSG:4326")
 	annual_export_image.export(annual_image,
-								filename_prefix=f"valley_water_ensemble_total_et_mm_{year}",
+								filename_suffix=f"valley_water_ensemble_total_et_mm_{year}",
 								export_type="Drive",
 								drive_root_folder=r"G:\My Drive",
 								clip=geometry,
@@ -45,7 +45,7 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 
 	winter_export_image = Image(crs="EPSG:4326")
 	winter_export_image.export(winter_image,
-								filename_prefix=f"valley_water_ensemble_winter_et_mm_{year}",
+								filename_suffix=f"valley_water_ensemble_winter_et_mm_{year}",
 								export_type="Drive",
 								drive_root_folder=r"G:\My Drive",
 								clip=geometry,
