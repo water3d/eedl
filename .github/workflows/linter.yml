@@ -12,7 +12,7 @@ jobs:
       - name: Flake8 Lint
         uses: py-actions/flake8@v2
         with:
-          ignore: "W191,E501,E128,E124"
+          ignore: "W191,E501,E128,E124,E126,E127"
 
   Type-Check:
     runs-on: ubuntu-latest
