@@ -77,6 +77,10 @@ class TaskRegistry:
 		return [image for image in self.images if image._last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
+	def failed_tasks(self) -> List[ee.image.Image]:
+		return [image for image in self.images if image._last_task_status['state'] in self.FAILED_STATUSES]
+
+	@property
 	def downloadable_tasks(self) -> List[ee.image.Image]:
 		return [image for image in self.complete_tasks if image.task_data_downloaded is False and image._last_task_status['state'] not in self.FAILED_STATUSES]
 
@@ -89,7 +93,8 @@ class TaskRegistry:
 						download_location: Union[str, Path],
 						sleep_time: int = 10,
 						callback: Optional[str] = None,
-						try_again_disk_full: bool = True) -> None:
+						try_again_disk_full: bool = True,
+						on_failure="raise") -> None:
 
 		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
@@ -103,6 +108,13 @@ class TaskRegistry:
 					raise
 
 			time.sleep(sleep_time)
+
+		if on_failure == "raise" and len(self.failed_tasks) > 0:
+			raise EEException(f"{len(self.failed_tasks)} images failed to export. Example error message from first"
+							  f" failed image \"{self.failed_tasks[0]._last_task_status['description']}\" was"
+							  f" \"{self.failed_tasks[0]._last_task_status['error_message']}\"."
+							  f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
+							  f" messages for all export tasks.")
 
 
 main_task_registry = TaskRegistry()
@@ -162,11 +174,14 @@ class Image:
 
 	@staticmethod
 	def _initialize() -> None:
-		try:
-			ee.Initialize()
-		except EEException:
-			ee.Authenticate()
-			ee.Initialize()
+		try:  # try just a basic discardable operation used in their docs so that we don't initialize if we don't need to
+			_ = ee.Image("NASA/NASADEM_HGT/001")
+		except EEException:  # if it fails, try just running initialize
+			try:
+				ee.Initialize()
+			except EEException:  # if that still fails, try authenticating first
+				ee.Authenticate()
+				ee.Initialize()
 
 	def export(self,
 				image: ee.image.Image,
@@ -206,7 +221,7 @@ class Image:
 
 		# Get a silent error if clip is not of type ee.geometry.Geometry
 		if isinstance(clip, ee.geometry.Geometry):
-			ee_kwargs["region"] = self._ee_image.clip(clip)
+			ee_kwargs["region"] = clip
 		elif clip:
 			raise ValueError("Invalid geometry provided for export")
 
@@ -233,7 +248,7 @@ class Image:
 
 		main_task_registry.add(self)
 
-	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None) -> None:
+	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
 
 		:return:
@@ -249,6 +264,7 @@ class Image:
 		folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 		self.output_folder = os.path.join(str(download_location), str(self.export_folder))
 		if self.export_type.lower() == "drive":
+			time.sleep(drive_wait)  # it seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		elif self.export_type.lower() == "cloud":
