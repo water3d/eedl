@@ -10,6 +10,7 @@ import eedl
 
 ee.Initialize()
 
+
 def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/GRIDMET/MONTHLY/v2_0", band="et_ensemble_mad") -> Iterable:
 	geometry = ee.FeatureCollection("users/nrsantos/vw_extraction_mask").geometry()
 
@@ -18,8 +19,8 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 
 	# for the winter image, we need two date ranges within the same year - Jan-Mar and December. Do that by getting two separate collections and merging them
 	winter_collection = ImageCollection(openet_collection).filterBounds(geometry).filterDate(f"{year}-01-01", f"{year}-03-31") \
-					.merge(ImageCollection(openet_collection).filterBounds(geometry).filterDate(f"{year}-12-01", f"{year}-12-31")) \
-					.select(band)
+							.merge(ImageCollection(openet_collection).filterBounds(geometry).filterDate(f"{year}-12-01", f"{year}-12-31")) \
+							.select(band)
 
 	# Earth Engine errors out if we try to sum the collections without converting the images into Doubles first, which is too bad because they'd be very efficient otherwise
 	annual_collection_doubles = annual_collection.map(lambda image: image.toDouble())
@@ -42,7 +43,6 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 								folder="vw_et_update_2023"
 							)
 
-
 	winter_export_image = Image(crs="EPSG:4326")
 	winter_export_image.export(winter_image,
 								filename_prefix=f"valley_water_ensemble_winter_et_mm_{year}",
@@ -55,16 +55,17 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 	return (annual_export_image, winter_export_image)
 	# return (annual_export_image, )
 
+
 folder_path = os.path.dirname(os.path.abspath(__file__))
 field_boundaries_by_year = {
-							"2018": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2018_wgs84"),
-							"2019": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2019_wgs84"),
-							"2020": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2020_wgs84")
+								"2018": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2018_wgs84"),
+								"2019": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2019_wgs84"),
+								"2020": os.path.join(folder_path, r"data\liq_field_centroids_by_year.gpkg\fields_liq_centroids_2020_wgs84")
 							}
 
 
 def download_updated_vw_et_images_by_year(download_folder=r"D:\vw_et_update_2023",
-										  field_boundaries=field_boundaries_by_year) -> None:
+											field_boundaries=field_boundaries_by_year) -> None:
 	exports_by_year = {}
 
 	print("Running exports")
