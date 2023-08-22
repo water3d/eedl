@@ -111,10 +111,10 @@ class TaskRegistry:
 
 		if on_failure == "raise" and len(self.failed_tasks) > 0:
 			raise EEException(f"{len(self.failed_tasks)} images failed to export. Example error message from first"
-							  f" failed image \"{self.failed_tasks[0]._last_task_status['description']}\" was"
-							  f" \"{self.failed_tasks[0]._last_task_status['error_message']}\"."
-							  f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
-							  f" messages for all export tasks.")
+								f" failed image \"{self.failed_tasks[0]._last_task_status['description']}\" was"
+								f" \"{self.failed_tasks[0]._last_task_status['error_message']}\"."
+								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
+								f" messages for all export tasks.")
 
 
 main_task_registry = TaskRegistry()
