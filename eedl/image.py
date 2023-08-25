@@ -19,25 +19,6 @@ DEFAULTS = dict(
 )
 
 
-def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
-	"""
-	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-	to do this, but it'll work in many situations.
-
-	:param polygon_path: File location of polygons.
-	:type polygon_path: Union[str, Path]
-	:return: Returns the full path and, depending on the file format, the file name in a dictionary.
-	:rtype: Dict[str, Union[str, Path]]
-	"""
-
-	parts = os.path.split(polygon_path)
-	# if the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
-	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[1]:
-		return {'fp': parts[0], 'layer': parts[1]}
-	else:
-		return {'fp': polygon_path}
-
-
 def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
 	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
@@ -72,7 +53,7 @@ class TaskRegistry:
 		Initialized the TaskRegistry class and defaults images to "[]" and the callback function to "None"
 		:return: None
 		"""
-		self.images: List[Image] = []
+		self.images: List[EEDLImage] = []
 		self.callback: Optional[str] = None
 
 	def add(self, image: ee.image.Image) -> None:
@@ -177,7 +158,7 @@ class TaskRegistry:
 main_task_registry = TaskRegistry()
 
 
-class Image:
+class EEDLImage:
 	"""
 	The main class that does all the work. Any use of this package should instantiate this class for each export
 	the user wants to do. As we refine this, we may be able to provide just a single function in this module named

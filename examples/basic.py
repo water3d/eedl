@@ -3,7 +3,7 @@ from ee import ImageCollection
 
 # we should change the name of our Image class - it conflicts with the class image in the ee package, and people will
 # likely be using both. Let's not cause confusion
-from eedl.image import Image
+from eedl.image import EEDLImage
 import eedl
 
 
@@ -13,7 +13,7 @@ def test_simple() -> None:
 
 	# Adam, make sure to set the drive root folder for your own testing - we'll need to fix this, and in the future,
 	# we can use a Google Cloud bucket for most testing this is clunky - we should make the instantiation of the image be able to take a kwarg that sets the value of image, I think.
-	image = Image()
+	image = EEDLImage()
 	image.export(s2_image, "valley_water_s2_test_image", export_type="Drive", drive_root_folder=r"G:\My Drive", clip=geometry)
 
 	# We need to make it check and report whether the export on the EE side was successful. This test "passed" because Earth Engine failed and there wasn't anything to download (oops)

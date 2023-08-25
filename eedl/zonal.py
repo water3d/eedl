@@ -1,32 +1,15 @@
 import csv
 import os
 from pathlib import Path
-from typing import Dict, Iterable, Union
+from typing import Iterable, Union
 
 import fiona
 import rasterstats
 
-
-def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
-	"""
-	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-	to do this, but it'll work in many situations.
-
-	:param polygon_path: File location of polygons.
-	:type polygon_path: Union[str, Path]
-	:return: Returns the full path and, depending on the file format, the file name in a dictionary.
-	:rtype: Dict[str, Union[str, Path]]
-	"""
-
-	parts = os.path.split(polygon_path)
-	# if the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB
-	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[1]:
-		return {'fp': parts[0], 'layer': parts[1]}
-	else:
-		return {'fp': polygon_path}
+from eedl.core import _get_fiona_args
 
 
-def zonal_stats(features: Union[str, Path],
+def zonal_stats(features: Union[str, Path, fiona.Collection],
 				raster: Union[str, Path, None],
 				output_folder: Union[str, Path, None],
 				filename: str,
@@ -73,16 +56,22 @@ def zonal_stats(features: Union[str, Path],
 	# next line, each item isn't evaluated, which should prevent us from needing to store a geojson representation of
 	# all the polygons at one time since we'll strip it off (it'd be bad to try to keep all of it
 
-	# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
-	# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
-	kwargs = _get_fiona_args(features)
-	main_file_path = kwargs['fp']
-	del kwargs['fp']
-
 	output_filepath: Union[str, None] = None
 
-	with fiona.open(main_file_path, **kwargs) as feats_open:
+	if not isinstance(features, fiona.Collection):  # if features isn't already a fiona collection instance we can iterate over
+		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
+		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
+		kwargs = _get_fiona_args(features)
+		main_file_path = kwargs['fp']
+		del kwargs['fp']
 
+		feats_open = fiona.open(main_file_path, **kwargs)
+		_feats_opened_in_function = True
+	else:
+		feats_open = features  # if it's a fiona instance, just use the open instance
+		_feats_opened_in_function = False  # but mark that we didn't open it so we don't close it later
+
+	try:
 		if not use_points:  # If we want to do zonal, open a zonal stats generator
 			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
 			fieldnames = (*stats, *keep_fields)
@@ -132,6 +121,9 @@ def zonal_stats(features: Union[str, Path],
 			if len(results) > 0:  # Clear out any remaining items at the end
 				writer.writerows(results)
 				print(i)
+	finally:
+		if _feats_opened_in_function:  # if we opened the fiona object here, close it. Otherwise, leave it open
+			feats_open.close()
 
 	return output_filepath
 
