@@ -262,7 +262,7 @@ class EEDLImage:
 				filename_suffix: str,
 				export_type: str = "drive",
 				clip: Optional[ee.geometry.Geometry] = None,
-			   	strict_clip: Optional[bool] = False,
+				strict_clip: Optional[bool] = False,
 				drive_root_folder: Optional[Union[str, Path]] = None,
 				**export_kwargs) -> None:
 		"""
