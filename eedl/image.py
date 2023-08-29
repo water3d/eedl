@@ -285,7 +285,7 @@ class EEDLImage:
 			raise ValueError("Invalid image provided for export")
 
 		if export_type.lower() == "drive" and \
-			(self.drive_root_folder is not None or not os.path.exists(self.drive_root_folder)) and \
+			(self.drive_root_folder is None or not os.path.exists(self.drive_root_folder)) and \
 			(drive_root_folder is None or not os.path.exists(drive_root_folder)):
 
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
