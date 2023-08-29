@@ -18,6 +18,7 @@ class GroupedCollectionExtractor():
 		self.time_end = None
 		self.areas_of_interest_path = None  # the path to a spatial data file readable by Fiona/GEOS that has features defining AOIs to extract individually
 
+		self.drive_root_folder = None
 		self.download_folder = None
 
 		self.zonal_run = True
@@ -72,7 +73,7 @@ class GroupedCollectionExtractor():
 					:param state:
 					:return:
 					"""
-					export_image = EEDLImage(task_registry=task_registry)
+					export_image = EEDLImage(task_registry=task_registry, drive_root_folder=self.drive_root_folder)
 					export_image.export(image, filename_suffix=f"-{aoi_attr}_{self.time_start}-{self.time_end}")   # this all needs some work still so that
 
 					return state

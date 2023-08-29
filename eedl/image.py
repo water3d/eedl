@@ -284,13 +284,17 @@ class EEDLImage:
 		if not isinstance(image, ee.image.Image):
 			raise ValueError("Invalid image provided for export")
 
-		if export_type.lower() == "drive" and (drive_root_folder is None or not os.path.exists(drive_root_folder)):
+		if export_type.lower() == "drive" and \
+			(self.drive_root_folder is not None or not os.path.exists(self.drive_root_folder)) and \
+			(drive_root_folder is None or not os.path.exists(drive_root_folder)):
+
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
 										" Drive export was specified. Either change the export type to use Google Cloud"
 										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
 										" to a valid folder")
 		elif export_type.lower() == "drive":
-			self.drive_root_folder = drive_root_folder
+			if drive_root_folder:
+				self.drive_root_folder = drive_root_folder
 
 		self._initialize()
 
