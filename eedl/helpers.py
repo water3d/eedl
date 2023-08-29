@@ -18,8 +18,11 @@ class GroupedCollectionExtractor():
 		self.time_end = None
 		self.areas_of_interest_path = None  # the path to a spatial data file readable by Fiona/GEOS that has features defining AOIs to extract individually
 
+		self.strict_clip = False
+		self.export_type = "drive"
 		self.drive_root_folder = None
-		self.download_folder = None
+		self.download_folder = None  # local folder name after downloading for processing
+		self.export_folder = None  # drive/cloud export folder name
 
 		self.zonal_run = True
 		self.zonal_areas_of_interest_attr = None  # what is the attribute on each of the AOI polygons that tells us what items to use in the zonal extraction
@@ -74,7 +77,13 @@ class GroupedCollectionExtractor():
 					:return:
 					"""
 					export_image = EEDLImage(task_registry=task_registry, drive_root_folder=self.drive_root_folder)
-					export_image.export(image, filename_suffix=f"-{aoi_attr}_{self.time_start}-{self.time_end}")   # this all needs some work still so that
+					export_image.export(image,
+										export_type=self.export_type,
+										folder=self.export_folder,
+										filename_suffix=f"-{aoi_attr}_{self.time_start}-{self.time_end}",
+										clip=ee_geom,
+										strict_clip=self.strict_clip
+					)   # this all needs some work still so that
 
 					return state
 
@@ -87,6 +96,6 @@ class GroupedCollectionExtractor():
 				aoi_collection.iterate(_single_item_extract, None)
 
 				download_folder = os.path.join(self.download_folder, aoi_attr)
-				task_registry.wait_for_images(download_folder, sleep_time=60, callback="mosaic")
+				task_registry.wait_for_images(download_folder, sleep_time=60, callback="mosaic_and_zonal")
 
 				# then we process the tables by AOI group after processing them by individual image

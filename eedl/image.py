@@ -393,6 +393,28 @@ class EEDLImage:
 		self.mosaic_image = os.path.join(str(self.output_folder), f"{self.filename}_mosaic.tif")
 		mosaic_rasters.mosaic_folder(str(self.output_folder), self.mosaic_image, prefix=self.filename)
 
+	def mosaic_and_zonal(self) -> None:
+		"""
+			A callback that takes no parameters, but runs mosaic and zonal stats. Runs zonal stats
+			by allowing the user to set all the zonal params on the class instance instead of passing
+			them as params
+		"""
+
+		if not (self.polygons and self.keep_fields and self.stats):
+			raise ValueError("Can't run mosaic and zonal callback without `polygons`, `keep_fields, and `stats` values"
+							 "set on the class instance.")
+
+		try:
+			use_points = self.use_points
+		except AttributeError:
+			use_points = False
+
+		self.mosaic()
+		self.zonal_stats(polygons=self.polygons,
+						 keep_fields=self.keep_fields,
+						 stats=self.stats,
+						 use_points=use_points)
+
 	def zonal_stats(self,
 					polygons: Union[str, Path],
 					keep_fields: Tuple[str, ...] = ("UniqueID", "CLASS2"),
