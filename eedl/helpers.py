@@ -1,7 +1,7 @@
 import os
 
 from .core import _get_fiona_args
-from .image import EEDLImage, main_task_registry
+from .image import EEDLImage, TaskRegistry
 
 import ee
 from ee import ImageCollection
@@ -55,6 +55,8 @@ class GroupedCollectionExtractor():
 		self._all_outputs = list()
 		with fiona.open(main_file_path, **kwargs) as features:
 			for feature in features:
+				task_registry = TaskRegistry()
+
 				ee_geom = ee.Geometry.Polygon(feature['geometry']['coordinates'])  # WARNING: THIS DOESN'T CHECK CRS
 				aoi_collection = collection.filterBounds(ee_geom)
 
@@ -70,8 +72,10 @@ class GroupedCollectionExtractor():
 					:param state:
 					:return:
 					"""
-					export_image = EEDLImage()
+					export_image = EEDLImage(task_registry=task_registry)
 					export_image.export(image, filename_suffix=f"-{aoi_attr}_{self.time_start}-{self.time_end}")   # this all needs some work still so that
+
+					return state
 
 				# ok, now that we have a collection for the AOI, we need to iterate through all the images
 				# in the collection as we normally would in a script, but also extract the features of interest for use
@@ -82,6 +86,6 @@ class GroupedCollectionExtractor():
 				aoi_collection.iterate(_single_item_extract, None)
 
 				download_folder = os.path.join(self.download_folder, aoi_attr)
-				main_task_registry.wait_for_images(download_folder, sleep_time=60, callback="mosaic")
+				task_registry.wait_for_images(download_folder, sleep_time=60, callback="mosaic")
 
 				# then we process the tables by AOI group after processing them by individual image

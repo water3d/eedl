@@ -193,6 +193,7 @@ class EEDLImage:
 		self.bucket: Optional[str] = None
 		self._ee_image: Optional[ee.image.Image] = None
 		self.output_folder: Optional[Union[str, Path]] = None
+		self.task_registry = main_task_registry
 
 		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 		for key in DEFAULTS:
@@ -334,7 +335,7 @@ class EEDLImage:
 
 		self.export_type = export_type
 
-		main_task_registry.add(self)
+		self.task_registry.add(self)
 
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
