@@ -262,6 +262,7 @@ class EEDLImage:
 				filename_suffix: str,
 				export_type: str = "drive",
 				clip: Optional[ee.geometry.Geometry] = None,
+			   	strict_clip: Optional[bool] = False,
 				drive_root_folder: Optional[Union[str, Path]] = None,
 				**export_kwargs) -> None:
 		"""
@@ -273,16 +274,20 @@ class EEDLImage:
 		:type filename_suffix: Str
 		:param export_type: Specifies how the image should be exported. Either "cloud" or "drive". Defaults to "drive".
 		:type export_type: Str
-		:param clip: Defines the clip that should be used
+		:param clip: Defines the region of interest for export - does not perform a strict clip, which is often slower.
+			Instead it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
+			the clip geometry. To clip to the actual geometry, set strict_clip to True
 		:type clip: Optional[ee.geometry.Geometry]
+		:param strict_clip: When set to True, performs a true clip on the result so that it's not just the bounding box
+			but also the actual clipping geometry. Defaults to False
+		:type clip: Optional[bool]
 		:param drive_root_folder: The folder for exporting if "drive" is selected
 		:type drive_root_folder: Optional[Union[str, Path]]
 		:return: None
 		"""
 
-		# If "image" does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
-			raise ValueError("Invalid image provided for export")
+			raise ValueError("Invalid image provided for export - please provide a single image (not a collection or another object) of class ee.image.Image for export")
 
 		if export_type.lower() == "drive" and \
 			(self.drive_root_folder is None or not os.path.exists(self.drive_root_folder)) and \
@@ -298,6 +303,12 @@ class EEDLImage:
 
 		self._initialize()
 
+		if clip and not isinstance(clip, ee.geometry.Geometry):
+			raise ValueError("Invalid geometry provided for clipping. Export parameter `clip` must be an instance of ee.geometry.Geometry")
+
+		if clip and strict_clip and isinstance(clip, ee.geometry.Geometry):  #
+			image = image.clip(clip)
+
 		self._ee_image = image
 
 		self._set_names(filename_suffix)
@@ -312,11 +323,8 @@ class EEDLImage:
 			'crs': self.crs
 		}
 
-		# Get a silent error if clip is not of type ee.geometry.Geometry
 		if isinstance(clip, ee.geometry.Geometry):
 			ee_kwargs["region"] = clip
-		elif clip:
-			raise ValueError("Invalid geometry provided for export")
 
 		# override any of these defaults with anything else provided
 		ee_kwargs.update(export_kwargs)
