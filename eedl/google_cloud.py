@@ -25,13 +25,13 @@ def get_public_export_urls(bucket_name: str, prefix: str = "") -> List[str]:
 	base_url = "https://storage.googleapis.com/"
 	request_url = f"{base_url}{bucket_name}/"
 
-	# get the content of the bucket (it needs to be public
+	# Get the content of the bucket (it needs to be public
 	listing = requests.get(request_url).text
 
-	# comes back as an XML listing - don't need to parse the XML, just need the values of the Key elements
+	# Comes back as an XML listing - don't need to parse the XML, just need the values of the Key elements
 	pattern = re.compile("<Key>(.*?)</Key>")
 	items = pattern.findall(listing)
-	# make them into full URLs with the bucket URL at the front and check if the files have the prefix specific
+	# Make them into full URLs with the bucket URL at the front and check if the files have the prefix specific
 	filtered = [f"{request_url}{item}" for item in items if item.startswith(prefix)]
 
 	return filtered
@@ -48,15 +48,15 @@ def download_public_export(bucket_name: str, output_folder: Union[str, Path], pr
 	:type prefix: str
 	:return: None.
 	"""
-	# get the urls of items in the bucket with the specified prefix
+	# Get the urls of items in the bucket with the specified prefix
 	urls = get_public_export_urls(bucket_name, prefix)
 
 	for url in urls:
-		filename = url.split("/")[-1]  # get the filename
-		output_path = Path(output_folder) / filename  # construct the output path
-		# get the data - this could be a problem if it's larger than fits in RAM - I believe requests has a way to operate as a streambuffer - not looking into that at this moment
+		filename = url.split("/")[-1]  # Get the filename
+		output_path = Path(output_folder) / filename  # Construct the output path
+		# Get the data - this could be a problem if it's larger than fits in RAM - I believe requests has a way to operate as a streambuffer - not looking into that at this moment
 		response = requests.get(url)
-		output_path.write_bytes(response.content)  # write it to a file
+		output_path.write_bytes(response.content)  # Write it to a file
 
 
 def download_export(bucket_name: str,
@@ -65,7 +65,7 @@ def download_export(bucket_name: str,
 					delimiter: str = "/",
 					autodelete: bool = True) -> None:
 
-	"""Downloads a blob from the bucket.
+	"""Downloads a blob from the specified bucket.
 
 	Modified from Google Cloud sample documentation at
 		https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python

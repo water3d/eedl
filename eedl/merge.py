@@ -15,7 +15,6 @@ def merge_outputs(file_mapping,
 	"""
 	Makes output zonal stats files into a data frame and adds a datetime field. Merges all inputs into one DF, and
 	can optionally insert into a sqlite database.
-
 	:param file_mapping: A set of tuples with a path to a file and a time value (string or datetime) to associate with it.
 	:type file_mapping:
 	:param date_field: Defaults to "et_date".
@@ -37,7 +36,7 @@ def merge_outputs(file_mapping,
 		df.loc[:, date_field] = time_value
 		dfs.append(df)
 
-	# merge all the data frames together
+	# Merge all the data frames together
 	final_df = pandas.concat(dfs)
 	final_df.reset_index(inplace=True)
 
@@ -50,16 +49,16 @@ def merge_outputs(file_mapping,
 
 def plot_merged(df: pandas.DataFrame, et_field: str, date_field: str = "et_date", uniqueid: str = "UniqueID") -> so.Plot:
 	"""
-
-	:param df: Data source for the plot
+	Creates a seaborn plot of the
+	:param df: Data source for the plot.
 	:type df: pandas.DataFrame
-	:param et_field: Name of the variable on the x-axis
+	:param et_field: Name of the variable on the x-axis.
 	:type et_field: str
-	:param date_field: Name of the variable on the y-axis. Default is "et_date"
+	:param date_field: Name of the variable on the y-axis. Default is "et_date".
 	:type date_field: str
-	:param uniqueid: Defines additional data subsets that transforms should operate on independently. Default is "UniqueID"
+	:param uniqueid: Defines additional data subsets that transforms should operate on independently. Default is "UniqueID".
 	:type uniqueid: str
-	:return: Returns a seaborn object plot
+	:return: Returns a seaborn object plot.
 	:rtype: so.Plot
 	"""
 	return (
