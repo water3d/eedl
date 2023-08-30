@@ -34,6 +34,9 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 	folder_search_path: Union[str, Path] = source_location
 	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
 
+	if len(files) == 0:
+		print(f"Likely Error: Could not find files to download for {prefix} in {folder_search_path} - you likely have a misconfiguration in your export parameters. Future steps may fail.")
+
 	os.makedirs(download_location, exist_ok=True)
 
 	for filename in files:
@@ -195,6 +198,7 @@ class EEDLImage:
 		self.output_folder: Optional[Union[str, Path]] = None
 		self.task_registry = main_task_registry
 
+		self.filename_description = ""
 		self.date_string = ""  # for items that want to store a date representation
 
 		# these values are only used if someone calls the mosaic_and_zonal callback - we need the values defined on
@@ -218,7 +222,6 @@ class EEDLImage:
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # other option is "Cloud"
 
-		self.filename_description = ""
 
 	def _set_names(self, filename_suffix: str = "") -> None:
 		"""
@@ -342,6 +345,8 @@ class EEDLImage:
 		if export_type.lower() == "drive":
 			if "folder" not in ee_kwargs:
 				ee_kwargs['folder'] = self.export_folder
+			else:
+				self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later
 			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 		elif export_type.lower() == "cloud":
 			# add the folder to the filename here for Google Cloud
