@@ -6,7 +6,7 @@ from typing import Sequence, Union
 from osgeo import gdal
 
 
-def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: Union[str, bytes] = "") -> None:
+def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: str = "") -> None:
 	"""
 
 	:param folder_path: Location of the folder.
@@ -17,7 +17,7 @@ def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], 
 	:type prefix: Str
 	:return: None
 	"""
-	tifs: Sequence[str] = [str(os.path.join(folder_path, filename)) for filename in os.listdir(folder_path) if filename.endswith(bytes(".tif")) and filename.startswith(prefix)]
+	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
 	mosaic_rasters(tifs, output_path)
 
 

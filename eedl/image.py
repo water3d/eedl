@@ -38,7 +38,7 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 		return {'fp': polygon_path}
 
 
-def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: Union[str, bytes]) -> None:
+def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
 	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
 
