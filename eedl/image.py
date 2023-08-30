@@ -195,6 +195,16 @@ class EEDLImage:
 		self.output_folder: Optional[Union[str, Path]] = None
 		self.task_registry = main_task_registry
 
+		self.date_string = ""  # for items that want to store a date representation
+
+		# these values are only used if someone calls the mosaic_and_zonal callback - we need the values defined on
+		# the class to do that
+		self.zonal_polygons: Optional[Union[str, Path]] = None
+		self.zonal_stats_to_calc: Optional[Tuple] = None
+		self.zonal_keep_fields: Optional[Tuple] = None
+		self.zonal_use_points: bool = False
+		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
+
 		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 		for key in DEFAULTS:
 			setattr(self, key.lower(), DEFAULTS[key])
@@ -400,20 +410,20 @@ class EEDLImage:
 			them as params
 		"""
 
-		if not (self.polygons and self.keep_fields and self.stats):
+		if not (self.zonal_polygons and self.zonal_keep_fields and self.zonal_stats_to_calc):
 			raise ValueError("Can't run mosaic and zonal callback without `polygons`, `keep_fields, and `stats` values"
-							 "set on the class instance.")
+								"set on the class instance.")
 
 		try:
-			use_points = self.use_points
+			use_points = self.zonal_use_points
 		except AttributeError:
 			use_points = False
 
 		self.mosaic()
-		self.zonal_stats(polygons=self.polygons,
-						 keep_fields=self.keep_fields,
-						 stats=self.stats,
-						 use_points=use_points)
+		self.zonal_stats(polygons=self.zonal_polygons,
+							keep_fields=self.zonal_keep_fields,
+							stats=self.zonal_stats_to_calc,
+							use_points=use_points)
 
 	def zonal_stats(self,
 					polygons: Union[str, Path],
@@ -442,7 +452,7 @@ class EEDLImage:
 
 		"""
 
-		zonal.zonal_stats(polygons,
+		self.zonal_output_filepath = zonal.zonal_stats(polygons,
 							self.mosaic_image,
 							self.output_folder,
 							self.filename,

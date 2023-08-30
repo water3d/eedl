@@ -6,7 +6,7 @@ from typing import Iterable, Union
 import fiona
 import rasterstats
 
-from eedl.core import _get_fiona_args
+from eedl.core import safe_fiona_open
 
 
 def zonal_stats(features: Union[str, Path, fiona.Collection],
@@ -58,14 +58,10 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 
 	output_filepath: Union[str, None] = None
 
-	if not isinstance(features, fiona.Collection):  # if features isn't already a fiona collection instance we can iterate over
+	if not (isinstance(features, fiona.Collection) or hasattr(features, "__iter__")):  # if features isn't already a fiona collection instance or something else we can iterate over
 		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
 		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
-		kwargs = _get_fiona_args(features)
-		main_file_path = kwargs['fp']
-		del kwargs['fp']
-
-		feats_open = fiona.open(main_file_path, **kwargs)
+		feats_open = safe_fiona_open(features)
 		_feats_opened_in_function = True
 	else:
 		feats_open = features  # if it's a fiona instance, just use the open instance
@@ -126,43 +122,3 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 			feats_open.close()
 
 	return output_filepath
-
-
-def run_data_2018_baseline() -> None:
-	"""
-
-
-	:return: None
-	"""
-	datasets = [
-		# dict(
-		# name="cv_water_balance",
-		# raster_folder=r"D:\ET_Summers\ee_exports_water_balance\et_exports_sseboper",
-		# liq=r"C:\Users\dsx\Downloads\drought_liq_2018.gdb\liq_cv_2018_3310",
-		# output_folder=r"D:\ET_Summers\ee_exports_water_balance\et_exports_sseboper\2018_baseline"
-		# ),
-		dict(
-			name="non_cv_water_balance",
-			raster_folder=r"D:\ET_Summers\ee_exports_water_balance_non_cv\et_exports_sseboper",
-			liq=r"C:\Users\dsx\Downloads\drought_liq_2018.gdb\liq_non_cv_2018_3310",
-			output_folder=r"D:\ET_Summers\ee_exports_water_balance_non_cv\et_exports_sseboper\2018_baseline"
-		)
-
-	]
-
-	skips = [r"mean_et_2022-2022-05-01--2022-08-31__water_balance_may_aug_mean_mosaic.tif"]
-
-	for dataset in datasets:
-		liq = dataset["liq"]
-		raster_folder = dataset["raster_folder"]
-		output_folder = dataset["output_folder"]
-		# was going to do this differently, but leaving it alone
-		rasters = [item for item in os.listdir(raster_folder) if item.endswith(".tif") and item not in skips]
-		rasters_processing = [os.path.join(raster_folder, item) for item in rasters]
-
-		print(liq)
-		print(rasters_processing)
-		for raster in rasters_processing:
-			print(raster)
-			output_name = os.path.splitext(os.path.split(raster)[1])[0]
-			zonal_stats(liq, raster, output_folder, output_name)

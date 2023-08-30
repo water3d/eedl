@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from typing import Union, Dict
 
+import fiona
+
 
 def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
 	"""
@@ -20,3 +22,22 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 		return {'fp': parts[0], 'layer': parts[1]}
 	else:
 		return {'fp': polygon_path}
+
+
+def safe_fiona_open(features_path: Union[str, Path], **extra_kwargs) -> fiona.Collection:
+	"""
+		Handles opening things in fiona in a way that is safe, even for geodatabases where we need
+		to open the geodatabase itself and specify a layer. The caller is responsible for
+		ensuring the features are closed (e.g. a try/finally block with a call to features.close()
+		in the finally block should immediately follow calling this function.
+	:param features_path: A Path object or string path to open with fiona
+	:param extra_kwargs: Keyword arguments to directly pass through to fiona. Helpful when trying to filter features, etc
+	:return:
+	"""
+	kwargs = _get_fiona_args(features_path)
+	main_file_path = kwargs['fp']
+	del kwargs['fp']
+
+	kwargs = {**kwargs, **extra_kwargs}
+
+	return fiona.open(main_file_path, **kwargs)
