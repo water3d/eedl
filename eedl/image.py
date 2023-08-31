@@ -22,7 +22,7 @@ class EEExportDict(TypedDict):
 	fileNamePrefix: str
 	scale: Union[int, float]
 	maxPixels: Union[int, float]
-	bucket: NotRequired[str]
+	bucket: NotRequired[Optional[str]]
 
 
 DEFAULTS = dict(
@@ -367,7 +367,7 @@ class EEDLImage:
 			# add the folder to the filename here for Google Cloud
 			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
 
-			if "cloud_bucket" not in ee_kwargs:  # if we already defined the bucket on the class, use that
+			if "bucket" not in ee_kwargs:  # if we already defined the bucket on the class, use that
 				ee_kwargs['bucket'] = self.cloud_bucket
 			else:  # otherwise, attempt to retrieve it from the call to this function
 				self.cloud_bucket = str(ee_kwargs['bucket'])
@@ -454,7 +454,7 @@ class EEDLImage:
 							stats=self.zonal_stats_to_calc,
 							use_points=use_points,
 							inject_constants=self.zonal_inject_constants,
-						 	nodata_value=self.zonal_nodata_value
+							nodata_value=self.zonal_nodata_value
 						)
 
 	def zonal_stats(self,
