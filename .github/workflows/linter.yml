@@ -22,5 +22,5 @@ jobs:
 
       - name: mypy check
         run: |
-          pip install mypy types-requests pandas-stubs
-          mypy -p eedl
+          pip install mypy types-requests pandas-stubs typing_extensions
+          mypy -p eedl --enable-incomplete-feature=Unpack

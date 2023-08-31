@@ -98,7 +98,8 @@ class GroupedCollectionExtractor():
 					image_list = aoi_collection.toList(aoi_collection.size()).getInfo()
 					indicies_and_dates = [(im['properties']['system:index'], im['properties']['system:time_start']) for im in image_list]
 
-					# if len(zonal_features_filtered) < self.max_fiona_features_load:
+					"""
+					if len(zonal_features_filtered) < self.max_fiona_features_load:
 					#	zonal_features_filtered = list(zonal_features_filtered)  # this *would* be inefficient, but we're going to re-use it so many times, it's not terrible, exce
 					#	using_tee = False
 					# else:
@@ -107,12 +108,13 @@ class GroupedCollectionExtractor():
 					# it may not load all attributes, etc, for each feature if fiona lazy loads anything. It won't
 					# be that much slower in any case, though the complexity of maintaining the code here is something
 					# to consider
+					"""
 					zonal_features_filtered_tee = itertools.tee(zonal_features_filtered, len(image_list))
 					using_tee = True
 
 					for i, image_info in enumerate(indicies_and_dates):
 						if using_tee:
-							zonal_features = zonal_features_filtered_tee[i-1]
+							zonal_features = zonal_features_filtered_tee[i - 1]
 						else:
 							zonal_features = zonal_features_filtered
 

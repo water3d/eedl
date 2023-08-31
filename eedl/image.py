@@ -3,6 +3,7 @@ import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+from typing_extensions import TypedDict, NotRequired, Unpack
 
 import ee
 from ee import EEException
@@ -11,9 +12,22 @@ from . import google_cloud
 from . import mosaic_rasters
 from . import zonal
 
+
+class EEExportDict(TypedDict):
+	fileDimensions: Optional[int]
+	folder: NotRequired[Optional[Union[str, Path]]]
+	crs: Optional[str]
+	region: NotRequired[ee.geometry.Geometry]
+	description: str
+	fileNamePrefix: str
+	scale: Union[int, float]
+	maxPixels: Union[int, float]
+	bucket: NotRequired[str]
+
+
 DEFAULTS = dict(
 	CRS='EPSG:4326',
-	TILE_SIZE=12800,
+	TILE_SIZE=12800,  # multiple of shardSize default 256
 	EXPORT_FOLDER="ee_exports"
 
 )
@@ -222,7 +236,6 @@ class EEDLImage:
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # other option is "Cloud"
 
-
 	def _set_names(self, filename_suffix: str = "") -> None:
 		"""
 
@@ -277,7 +290,7 @@ class EEDLImage:
 				clip: Optional[ee.geometry.Geometry] = None,
 				strict_clip: Optional[bool] = False,
 				drive_root_folder: Optional[Union[str, Path]] = None,
-				**export_kwargs) -> None:
+				**export_kwargs: Unpack[EEExportDict]) -> None:
 		"""
 		Handles the exporting of an image
 
@@ -326,12 +339,11 @@ class EEDLImage:
 
 		self._set_names(filename_suffix)
 
-		ee_kwargs = {
+		ee_kwargs: EEExportDict = {
 			'description': self.description,
 			'fileNamePrefix': self.filename,
 			'scale': 30,
 			'maxPixels': 1e12,
-			# multiple of shardSize default 256. Should split into about 9 tiles
 			'fileDimensions': self.tile_size,
 			'crs': self.crs
 		}
@@ -343,7 +355,7 @@ class EEDLImage:
 		ee_kwargs.update(export_kwargs)
 
 		if export_type.lower() == "drive":
-			if "folder" not in ee_kwargs:
+			if "folder" not in ee_kwargs:  # if they didn't specify a folder, use the class' default or whatever they defined previously
 				ee_kwargs['folder'] = self.export_folder
 			else:
 				self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later
