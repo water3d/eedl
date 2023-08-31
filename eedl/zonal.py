@@ -85,8 +85,10 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 																nodata=-9999,
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
-			fieldnames = ("value", *keep_fields, *inject_constants.keys())  # When doing point queries, we get a field called "value" back with the raster value
+			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value
 			filesuffix = "point_query"
+
+		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # this is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header
 
 		# Here's a first approach that still stores a lot in memory - it's commented out because we're instead
 		# going to just generate them one by one and write them to a file directly.
@@ -100,7 +102,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 		i = 0
 		output_filepath = os.path.join(str(output_folder), f"{filename}_{filesuffix}.csv")
 		with open(output_filepath, 'w', newline='') as csv_file:
-			writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+			writer = csv.DictWriter(csv_file, fieldnames=fieldnames_headers)
 			writer.writeheader()
 			results = []
 			for poly in zstats_results_geo:  # Get the result for the polygon, then filter the keys with the dictionary comprehension below

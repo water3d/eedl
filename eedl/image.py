@@ -222,7 +222,7 @@ class EEDLImage:
 		self.zonal_keep_fields: Optional[Tuple] = None
 		self.zonal_use_points: bool = False
 		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
-		self.zonal_inject_constants: Optional[dict] = None
+		self.zonal_inject_constants: dict = dict()
 
 		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 		for key in DEFAULTS:
@@ -452,7 +452,7 @@ class EEDLImage:
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
-					inject_constants = dict()
+					inject_constants: dict = dict()
 					) -> None:
 		"""
 

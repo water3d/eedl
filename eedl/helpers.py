@@ -1,7 +1,6 @@
 import os
 import itertools
 import datetime
-import typing
 
 from .core import safe_fiona_open
 from .image import EEDLImage, TaskRegistry
