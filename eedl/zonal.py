@@ -93,7 +93,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
 			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value
-			filesuffix = "point_query_nodata{nodata_value}"
+			filesuffix = f"point_query_nodata{nodata_value}"
 
 		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # this is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header
 
