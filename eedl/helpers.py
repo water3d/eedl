@@ -12,6 +12,9 @@ from ee import ImageCollection
 class GroupedCollectionExtractor():
 
 	def __init__(self, **kwargs):
+		self.keep_image_objects = False  # whether or not to store the EEDLImage objects on this class so they can be accessed when it's done. We don't just to not use the RAM on large exports
+		self.all_images = []  # all the exported images are saved here. They can then be operated on once the extractor is complete
+
 		self.collection = None
 		self.collection_band = None
 		self.time_start = None
@@ -22,6 +25,7 @@ class GroupedCollectionExtractor():
 		self.strict_clip = True  # may be necessary for some things to behave, so keeping this as a default to True. People can disable if they know what they're doing (may be faster)
 		self.export_type = "drive"
 		self.drive_root_folder = None
+		self.cloud_bucket = None
 		self.download_folder = None  # local folder name after downloading for processing
 		self.export_folder = None  # drive/cloud export folder name
 
@@ -34,6 +38,7 @@ class GroupedCollectionExtractor():
 		self.zonal_use_points = False
 		self.zonal_inject_date: bool = False
 		self.zonal_inject_group_id: bool = False
+		self.zonal_nodata_value: int = 0
 
 		self.merge_sqlite = True  # should we merge all outputs to a single SQLite database
 		self.merge_grouped_csv = True  # should we merge CSV by grouped item
@@ -58,12 +63,14 @@ class GroupedCollectionExtractor():
 		export_image = EEDLImage(
 			task_registry=task_registry,
 			drive_root_folder=self.drive_root_folder,
+			cloud_bucket=self.cloud_bucket,
 			filename_description="alfalfa_et_ensemble"
 		)
 		export_image.zonal_polygons = zonal_features
 		export_image.zonal_use_points = self.zonal_use_points
 		export_image.zonal_keep_fields = self.zonal_features_preserve_fields
 		export_image.zonal_stats_to_calc = self.zonal_stats_to_calc
+		export_image.zonal_nodata_value = self.zonal_nodata_value
 		export_image.date_string = image_date
 
 		zonal_inject_constants = {}
@@ -91,7 +98,9 @@ class GroupedCollectionExtractor():
 		self._all_outputs = list()
 		features = safe_fiona_open(self.areas_of_interest_path)
 		try:
+			num_complete = 0
 			for feature in features:
+				print(f"Number of complete AOIs: {num_complete}")
 				task_registry = TaskRegistry()
 
 				ee_geom = ee.Geometry.Polygon(feature['geometry']['coordinates'][0])  # WARNING: THIS DOESN'T CHECK CRS
@@ -99,7 +108,7 @@ class GroupedCollectionExtractor():
 
 				# get some variables defined for use in extracting the zonal stats
 				aoi_attr = feature.properties[self.zonal_areas_of_interest_attr]  # this is the value we'll search for in the zonal features
-				zonal_features_query = f"{self.zonal_features_area_of_interest_attr} = \"{aoi_attr}\""
+				zonal_features_query = f"{self.zonal_features_area_of_interest_attr} = '{aoi_attr}'"
 
 				fiona_zonal_features = safe_fiona_open(self.zonal_features_path)
 				try:
@@ -140,17 +149,15 @@ class GroupedCollectionExtractor():
 					# some kind of fiona iterator - can we filter fiona objects by attributes?
 					# fiona supports SQL queries on open and zonal stats now supports receiving an open fiona object
 
-					# aoi_collection.iterate(_single_item_extract, 0)
-
 					download_folder = os.path.join(self.download_folder, aoi_attr)
-					task_registry.wait_for_images(download_folder, sleep_time=30, callback="mosaic_and_zonal")
+					task_registry.wait_for_images(download_folder, sleep_time=30, callback="mosaic_and_zonal", try_again_disk_full=False)
+
+					if self.keep_image_objects:
+						self.all_images.extend(task_registry.images)
 				finally:
 					fiona_zonal_features.close()
 
-				# merge_mapping = [
-				# 	(image.zonal_output_filepath, image.date_string) for image in task_registry.images
-				# ]
-				# then we process the tables by AOI group after processing them by individual image
+				num_complete += 1
 		finally:
 			features.close()
 

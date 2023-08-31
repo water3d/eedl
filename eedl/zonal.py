@@ -19,6 +19,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 				write_batch_size: int = 2000,
 				use_points: bool = False,
 				inject_constants: dict = dict(),
+				nodata_value: int = -9999,
 				**kwargs) -> Union[str, Path, None]:
 	# TODO: Make this check if raster and polys are in the same CRS - if they're not, then rasterstats doesn't
 	#  automatically align them and we just get bad output.
@@ -74,19 +75,25 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 
 	try:
 		if not use_points:  # If we want to do zonal, open a zonal stats generator
-			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
+			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open,
+																raster,
+																stats=stats,
+																geojson_out=True,
+																nodata=nodata_value,
+																**kwargs
+															)
 			fieldnames = (*stats, *keep_fields)
-			filesuffix = "zonal_stats"
+			filesuffix = f"zonal_stats_nodata{nodata_value}"
 		else:  # Otherwise, open a point query generator.
 			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
 			zstats_results_geo = rasterstats.gen_point_query(feats_open,
 																raster,
 																geojson_out=True,  # Need this to get extra attributes back
-																nodata=-9999,
+																nodata=nodata_value,
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
 			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value
-			filesuffix = "point_query"
+			filesuffix = "point_query_nodata{nodata_value}"
 
 		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # this is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header
 

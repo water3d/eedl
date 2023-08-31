@@ -207,7 +207,7 @@ class EEDLImage:
 		self.export_folder: Optional[Union[str, Path]] = None
 		self.mosaic_image: Optional[Union[str, Path]] = None
 		self.task: Optional[ee.batch.Task] = None
-		self.bucket: Optional[str] = None
+		self.cloud_bucket: Optional[str] = None
 		self._ee_image: Optional[ee.image.Image] = None
 		self.output_folder: Optional[Union[str, Path]] = None
 		self.task_registry = main_task_registry
@@ -223,6 +223,7 @@ class EEDLImage:
 		self.zonal_use_points: bool = False
 		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
 		self.zonal_inject_constants: dict = dict()
+		self.zonal_nodata_value: int = -9999
 
 		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 		for key in DEFAULTS:
@@ -355,21 +356,30 @@ class EEDLImage:
 		# override any of these defaults with anything else provided
 		ee_kwargs.update(export_kwargs)
 
+		if "folder" not in ee_kwargs:  # if they didn't specify a folder, use the class' default or whatever they defined previously
+			ee_kwargs['folder'] = self.export_folder
+		else:
+			self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later on, and so it's picked up by cloud export code below
+
 		if export_type.lower() == "drive":
-			if "folder" not in ee_kwargs:  # if they didn't specify a folder, use the class' default or whatever they defined previously
-				ee_kwargs['folder'] = self.export_folder
-			else:
-				self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later
 			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 		elif export_type.lower() == "cloud":
 			# add the folder to the filename here for Google Cloud
 			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
-			self.bucket = str(ee_kwargs['bucket'])
+
+			if "cloud_bucket" not in ee_kwargs:  # if we already defined the bucket on the class, use that
+				ee_kwargs['bucket'] = self.cloud_bucket
+			else:  # otherwise, attempt to retrieve it from the call to this function
+				self.cloud_bucket = str(ee_kwargs['bucket'])
+
+			if "folder" in ee_kwargs:  # we made this part of the filename prefix above, so delete it now or it will cause an error.
+				del ee_kwargs["folder"]
+
 			self.task = ee.batch.Export.image.toCloudStorage(self._ee_image, **ee_kwargs)
 
 		# export_type is not valid
 		else:
-			raise ValueError("Invalid value for export_type. Did you mean drive or cloud?")
+			raise ValueError("Invalid value for export_type. Did you mean \"drive\" or \"cloud\"?")
 
 		self.task.start()
 
@@ -396,12 +406,13 @@ class EEDLImage:
 
 		folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 		self.output_folder = os.path.join(str(download_location), str(self.export_folder))
+
 		if self.export_type.lower() == "drive":
 			time.sleep(drive_wait)  # it seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		elif self.export_type.lower() == "cloud":
-			google_cloud.download_public_export(str(self.bucket), self.output_folder, f"{self.export_folder}/{self.filename}")
+			google_cloud.download_public_export(str(self.cloud_bucket), self.output_folder, f"{self.export_folder}/{self.filename}")
 
 		else:
 			raise ValueError("Unknown export_type (not one of 'drive', 'cloud') - can't download")
@@ -442,7 +453,8 @@ class EEDLImage:
 							keep_fields=self.zonal_keep_fields,
 							stats=self.zonal_stats_to_calc,
 							use_points=use_points,
-							inject_constants=self.zonal_inject_constants
+							inject_constants=self.zonal_inject_constants,
+						 	nodata_value=self.zonal_nodata_value
 						)
 
 	def zonal_stats(self,
@@ -452,7 +464,8 @@ class EEDLImage:
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
-					inject_constants: dict = dict()
+					inject_constants: dict = dict(),
+					nodata_value: int = -9999
 					) -> None:
 		"""
 
@@ -483,7 +496,8 @@ class EEDLImage:
 							report_threshold=report_threshold,
 							write_batch_size=write_batch_size,
 							use_points=use_points,
-							inject_constants=inject_constants
+							inject_constants=inject_constants,
+							nodata_value=nodata_value
 						)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:

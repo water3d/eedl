@@ -51,6 +51,8 @@ def download_public_export(bucket_name: str, output_folder: Union[str, Path], pr
 	# get the urls of items in the bucket with the specified prefix
 	urls = get_public_export_urls(bucket_name, prefix)
 
+	os.makedirs(output_folder, exist_ok=True)
+
 	for url in urls:
 		filename = url.split("/")[-1]  # get the filename
 		output_path = Path(output_folder) / filename  # construct the output path
