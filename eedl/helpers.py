@@ -1,6 +1,7 @@
 import os
 import itertools
 import datetime
+import typing
 
 from .core import safe_fiona_open
 from .image import EEDLImage, TaskRegistry
@@ -32,6 +33,8 @@ class GroupedCollectionExtractor():
 		self.zonal_features_preserve_fields = None  # what fields to preserve, as a tuple - typically an ID and anything else you want
 		self.zonal_stats_to_calc = ()  # what statistics to output by zonal feature
 		self.zonal_use_points = False
+		self.zonal_inject_date: bool = False
+		self.zonal_inject_group_id: bool = False
 
 		self.merge_sqlite = True  # should we merge all outputs to a single SQLite database
 		self.merge_grouped_csv = True  # should we merge CSV by grouped item
@@ -63,6 +66,14 @@ class GroupedCollectionExtractor():
 		export_image.zonal_keep_fields = self.zonal_features_preserve_fields
 		export_image.zonal_stats_to_calc = self.zonal_stats_to_calc
 		export_image.date_string = image_date
+
+		zonal_inject_constants = {}
+		if self.zonal_inject_date:
+			zonal_inject_constants["date"] = image_date
+		if self.zonal_inject_group_id:
+			zonal_inject_constants["group_id"] = aoi_attr
+
+		export_image.zonal_inject_constants = zonal_inject_constants
 
 		export_image.export(image,
 							export_type=self.export_type,

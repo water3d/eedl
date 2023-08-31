@@ -18,6 +18,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 				report_threshold: int = 1000,
 				write_batch_size: int = 2000,
 				use_points: bool = False,
+				inject_constants: dict = dict(),
 				**kwargs) -> Union[str, Path, None]:
 	# TODO: Make this check if raster and polys are in the same CRS - if they're not, then rasterstats doesn't
 	#  automatically align them and we just get bad output.
@@ -48,6 +49,10 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 		when use_points is True. Additionally, when this is True, the `stats` argument to this function is ignored
 		as only a single value will be extracted as the attribute `value` in the output CSV. Default is False.
 	:type use_points: Bool
+	:param inject_constants: A dictionary of field: value mappings to inject into every row. Useful if you plan to merge
+		the data later. For example, a raster may be a single variable and date, and we're extracting many rasters. So
+		for each zonal call, you could do something like inject_constants = {date: '2021-01-01', variable: 'et'}, which
+		would produce headers in the CSV for "date" and "variable" and added values in the CSV of "2021-01-01", "et".
 	:param kwargs: Passed through to rasterstats
 	:return:
 	:rtype: Union[str, Path, None]
@@ -80,7 +85,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 																nodata=-9999,
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
-			fieldnames = ("value", *keep_fields,)  # When doing point queries, we get a field called "value" back with the raster value
+			fieldnames = ("value", *keep_fields, *inject_constants.keys())  # When doing point queries, we get a field called "value" back with the raster value
 			filesuffix = "point_query"
 
 		# Here's a first approach that still stores a lot in memory - it's commented out because we're instead
@@ -104,6 +109,8 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 				for key in result:  # truncate the floats
 					if type(result[key]) is float:
 						result[key] = f"{result[key]:.5f}"
+
+				result = {**result, **inject_constants}  # merge in the constants
 
 				i += 1
 				results.append(result)

@@ -222,6 +222,7 @@ class EEDLImage:
 		self.zonal_keep_fields: Optional[Tuple] = None
 		self.zonal_use_points: bool = False
 		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
+		self.zonal_inject_constants: Optional[dict] = None
 
 		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
 		for key in DEFAULTS:
@@ -440,7 +441,9 @@ class EEDLImage:
 		self.zonal_stats(polygons=self.zonal_polygons,
 							keep_fields=self.zonal_keep_fields,
 							stats=self.zonal_stats_to_calc,
-							use_points=use_points)
+							use_points=use_points,
+							inject_constants=self.zonal_inject_constants
+						)
 
 	def zonal_stats(self,
 					polygons: Union[str, Path],
@@ -449,6 +452,7 @@ class EEDLImage:
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
+					inject_constants = dict()
 					) -> None:
 		"""
 
@@ -469,7 +473,8 @@ class EEDLImage:
 
 		"""
 
-		self.zonal_output_filepath = zonal.zonal_stats(polygons,
+		self.zonal_output_filepath = zonal.zonal_stats(
+							polygons,
 							self.mosaic_image,
 							self.output_folder,
 							self.filename,
@@ -477,7 +482,9 @@ class EEDLImage:
 							stats=stats,
 							report_threshold=report_threshold,
 							write_batch_size=write_batch_size,
-							use_points=use_points)
+							use_points=use_points,
+							inject_constants=inject_constants
+						)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 		"""
