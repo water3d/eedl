@@ -24,9 +24,10 @@ def get_public_export_urls(bucket_name: str, prefix: str = "") -> List[str]:
 
 	base_url = "https://storage.googleapis.com/"
 	request_url = f"{base_url}{bucket_name}/"
+	search_url = f"{request_url}?prefix={prefix}"  # need to include the prefix here or else we get failures after having more than 1k items
 
-	# get the content of the bucket (it needs to be public
-	listing = requests.get(request_url).text
+	# get the content of the bucket (it needs to be public)
+	listing = requests.get(search_url).text
 
 	# comes back as an XML listing - don't need to parse the XML, just need the values of the Key elements
 	pattern = re.compile("<Key>(.*?)</Key>")

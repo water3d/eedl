@@ -143,9 +143,9 @@ class TaskRegistry:
 				error_details = traceback.format_exc()
 				self.log_error("local", f"Failed to process image {image.filename}. Error details: {error_details}")
 
-	def setup_log(self, log_file_path: Union[str, Path]):
+	def setup_log(self, log_file_path: Union[str, Path], mode='a'):
 		self.log_file_path = log_file_path
-		self.log_file = open(self.log_file_path, 'w')
+		self.log_file = open(self.log_file_path, 'a')
 
 	def log_error(self, error_type: str, error_message: str):
 		"""
@@ -189,7 +189,7 @@ class TaskRegistry:
 
 		if on_failure == "raise":
 			self.raise_errors = True
-		elif self.raise_errors == "log":
+		elif on_failure == "log" and self.log_file:  # if they say to log the errors and specified a log file, set raise errors to False
 			self.raise_errors = False
 
 		self.callback = callback

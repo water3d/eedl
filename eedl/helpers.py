@@ -158,6 +158,7 @@ class GroupedCollectionExtractor():
 					# some kind of fiona iterator - can we filter fiona objects by attributes?
 					# fiona supports SQL queries on open and zonal stats now supports receiving an open fiona object
 
+					task_registry.setup_log(os.path.join(self.download_folder, "eedl_processing_error_log.txt"))
 					task_registry.wait_for_images(aoi_download_folder, sleep_time=15, callback="mosaic_and_zonal", try_again_disk_full=False, on_failure=self.on_error)
 
 					if self.keep_image_objects:
