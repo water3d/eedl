@@ -2,6 +2,7 @@
 	A tool to merge separate timeseries outputs into a single data frame or DB table
 """
 import sqlite3
+import os
 from typing import Optional
 
 import pandas
@@ -69,3 +70,29 @@ def plot_merged(df: pandas.DataFrame, et_field: str, date_field: str = "et_date"
 				).add(so.Line(linewidth=0.5, alpha=0.1), group=uniqueid)
 		.layout(size=(8, 4))
 	)
+
+
+def merge_csvs_in_folder(folder_path, output_path, sqlite_db=None, sqlite_table=None):
+	if sqlite_db and not sqlite_table:
+		raise ValueError("Cannot insert into sqlite db without table name")
+
+	csvs = [item for item in os.listdir(folder_path) if item.endswith(".csv")]
+
+	dfs = []
+	for csv in csvs:
+		print(csv)
+		df = pandas.read_csv(os.path.join(folder_path, csv))
+		dfs.append(df)
+
+	# merge all the data frames together
+	final_df = pandas.concat(dfs)
+	final_df.reset_index(inplace=True)
+
+	if output_path:
+		final_df.to_csv(output_path)
+
+	if sqlite_db:
+		with sqlite3.connect(sqlite_db) as conn:
+			final_df.to_sql(str(sqlite_table), conn)
+
+	return final_df
