@@ -1,4 +1,5 @@
 import os
+import io
 import shutil
 import time
 from pathlib import Path
@@ -74,9 +75,9 @@ class TaskRegistry:
 		"""
 		self.images: List[EEDLImage] = []
 		self.callback: Optional[str] = None
-		self.log_file_path = None  # the path to the log file
-		self.log_file = None  # the open log file handle
-		self.raise_errors = True
+		self.log_file_path: Optional[Union[str, Path]] = None  # the path to the log file
+		self.log_file: Optional[io.TextIOWrapper] = None  # the open log file handle
+		self.raise_errors: bool = True
 
 	def add(self, image: ee.image.Image) -> None:
 		"""
@@ -136,7 +137,8 @@ class TaskRegistry:
 			try:
 				print(f"{image.filename} is ready for download")
 				image.download_results(download_location=download_location, callback=self.callback)
-			except:  # on any error
+			except:  # noqa: E722
+				# on any error raise or log it
 				if self.raise_errors:
 					raise
 
@@ -164,7 +166,8 @@ class TaskRegistry:
 		if self.log_file is not None:
 			try:
 				self.log_file.close()
-			except:  # if we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
+			except:  # noqa: E722
+				# if we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
 				pass
 
 	def wait_for_images(self,
