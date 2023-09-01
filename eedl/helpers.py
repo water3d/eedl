@@ -14,6 +14,8 @@ class GroupedCollectionExtractor():
 	def __init__(self, **kwargs):
 		self.keep_image_objects = False  # whether or not to store the EEDLImage objects on this class so they can be accessed when it's done. We don't just to not use the RAM on large exports
 		self.all_images = []  # all the exported images are saved here. They can then be operated on once the extractor is complete
+		self.skip_existing = True  # a feature allowing it to resume from crashes. If the mosaic image exists, it skips doing any processing on the rest of it
+		self.on_error = "log"
 
 		self.collection = None
 		self.collection_band = None
@@ -51,7 +53,7 @@ class GroupedCollectionExtractor():
 		for kwarg in kwargs:
 			setattr(self, kwarg, kwargs[kwarg])
 
-	def _single_item_extract(self, image, task_registry, zonal_features, aoi_attr, ee_geom, image_date):
+	def _single_item_extract(self, image, task_registry, zonal_features, aoi_attr, ee_geom, image_date, aoi_download_folder):
 		"""
 			This looks a bit silly here, but we need to construct this here so that we have access
 			to this method's variables since we can't pass them in and it can't be a class function.
@@ -60,11 +62,12 @@ class GroupedCollectionExtractor():
 		:return:
 		"""
 
+		filename_description = "alfalfa_et_ensemble"
 		export_image = EEDLImage(
 			task_registry=task_registry,
 			drive_root_folder=self.drive_root_folder,
 			cloud_bucket=self.cloud_bucket,
-			filename_description="alfalfa_et_ensemble"
+			filename_description=filename_description
 		)
 		export_image.zonal_polygons = zonal_features
 		export_image.zonal_use_points = self.zonal_use_points
@@ -81,9 +84,14 @@ class GroupedCollectionExtractor():
 
 		export_image.zonal_inject_constants = zonal_inject_constants
 
+		filename_suffix = f"{aoi_attr}_{image_date}"
+		if self.skip_existing and export_image.check_mosaic_exists(aoi_download_folder, self.export_folder, f"{filename_description}_{filename_suffix}"):
+			print(f"Image {filename_suffix} exists and skip_existing=True. Skipping")
+			return
+
 		export_image.export(image,
 							export_type=self.export_type,
-							filename_suffix=f"{aoi_attr}_{image_date}",
+							filename_suffix=filename_suffix,
 							clip=ee_geom,
 							strict_clip=self.strict_clip,
 							folder=self.export_folder,  # the folder to export to in Google Drive
@@ -109,6 +117,7 @@ class GroupedCollectionExtractor():
 				# get some variables defined for use in extracting the zonal stats
 				aoi_attr = feature.properties[self.zonal_areas_of_interest_attr]  # this is the value we'll search for in the zonal features
 				zonal_features_query = f"{self.zonal_features_area_of_interest_attr} = '{aoi_attr}'"
+				aoi_download_folder = os.path.join(self.download_folder, aoi_attr)
 
 				fiona_zonal_features = safe_fiona_open(self.zonal_features_path)
 				try:
@@ -141,7 +150,7 @@ class GroupedCollectionExtractor():
 						timsetamp_in_seconds = int(str(image_info[1])[:-3])  # we could divide by 1000, but then we'd coerce back from a float. This is precise.
 						date_string = datetime.datetime.fromtimestamp(timsetamp_in_seconds, tz=datetime.timezone.utc).strftime("%Y-%m-%d")
 
-						self._single_item_extract(image, task_registry, zonal_features, aoi_attr, ee_geom, date_string)
+						self._single_item_extract(image, task_registry, zonal_features, aoi_attr, ee_geom, date_string, aoi_download_folder)
 
 					# ok, now that we have a collection for the AOI, we need to iterate through all the images
 					# in the collection as we normally would in a script, but also extract the features of interest for use
@@ -149,11 +158,11 @@ class GroupedCollectionExtractor():
 					# some kind of fiona iterator - can we filter fiona objects by attributes?
 					# fiona supports SQL queries on open and zonal stats now supports receiving an open fiona object
 
-					download_folder = os.path.join(self.download_folder, aoi_attr)
-					task_registry.wait_for_images(download_folder, sleep_time=30, callback="mosaic_and_zonal", try_again_disk_full=False)
+					task_registry.wait_for_images(aoi_download_folder, sleep_time=15, callback="mosaic_and_zonal", try_again_disk_full=False, on_failure=self.on_error)
 
 					if self.keep_image_objects:
 						self.all_images.extend(task_registry.images)
+
 				finally:
 					fiona_zonal_features.close()
 

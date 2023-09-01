@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from typing_extensions import TypedDict, NotRequired, Unpack
+import traceback
+import datetime
 
 import ee
 from ee import EEException
@@ -72,6 +74,9 @@ class TaskRegistry:
 		"""
 		self.images: List[EEDLImage] = []
 		self.callback: Optional[str] = None
+		self.log_file_path = None  # the path to the log file
+		self.log_file = None  # the open log file handle
+		self.raise_errors = True
 
 	def add(self, image: ee.image.Image) -> None:
 		"""
@@ -128,15 +133,46 @@ class TaskRegistry:
 		:return: None
 		"""
 		for image in self.downloadable_tasks:
-			print(f"{image.filename} is ready for download")
-			image.download_results(download_location=download_location, callback=self.callback)
+			try:
+				print(f"{image.filename} is ready for download")
+				image.download_results(download_location=download_location, callback=self.callback)
+			except:  # on any error
+				if self.raise_errors:
+					raise
+
+				error_details = traceback.format_exc()
+				self.log_error("local", f"Failed to process image {image.filename}. Error details: {error_details}")
+
+	def setup_log(self, log_file_path: Union[str, Path]):
+		self.log_file_path = log_file_path
+		self.log_file = open(self.log_file_path, 'w')
+
+	def log_error(self, error_type: str, error_message: str):
+		"""
+			:param error_type: Options "ee", "local" to indicate whether it was an error on Earth Engine's side or on
+				the local processing side
+			:param error_message: The error message to print to the log file
+		"""
+		message = f"{error_type} Error: {error_message}"
+		date_string = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+		print(message)
+
+		if self.log_file:
+			self.log_file.write(f"{date_string}: {message}")
+
+	def __del__(self):
+		if self.log_file is not None:
+			try:
+				self.log_file.close()
+			except:  # if we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
+				pass
 
 	def wait_for_images(self,
 						download_location: Union[str, Path],
 						sleep_time: int = 10,
 						callback: Optional[str] = None,
 						try_again_disk_full: bool = True,
-						on_failure="raise") -> None:
+						on_failure: str = "log") -> None:
 		"""
 		Blocker until there are no more incomplete or downloadable tasks left.
 
@@ -151,6 +187,11 @@ class TaskRegistry:
 		:return: None
 		"""
 
+		if on_failure == "raise":
+			self.raise_errors = True
+		elif self.raise_errors == "log":
+			self.raise_errors = False
+
 		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
 			try:
@@ -164,12 +205,16 @@ class TaskRegistry:
 
 			time.sleep(sleep_time)
 
-		if on_failure == "raise" and len(self.failed_tasks) > 0:
-			raise EEException(f"{len(self.failed_tasks)} images failed to export. Example error message from first"
-								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was"
-								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"."
-								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
-								f" messages for all export tasks.")
+		if len(self.failed_tasks) > 0:
+			message = f"{len(self.failed_tasks)} images failed to export. Example error message from first" \
+								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was" \
+								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"." \
+								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and" \
+								f" messages for all export tasks."
+			if on_failure == "raise":
+				raise EEException(message)
+			else:
+				print(message)
 
 
 main_task_registry = TaskRegistry()
@@ -387,6 +432,18 @@ class EEDLImage:
 
 		self.task_registry.add(self)
 
+	@staticmethod
+	def check_mosaic_exists(download_location: Union[str, Path], export_folder: Union[str, Path], filename: str):
+		"""
+			This function isn't ideal because it duplicates information - you need to pass it in elsewhere and assume
+			this file format matches, rather than actually calculating the paths earlier in the process. But that's
+			currently necessary because the task registry sets the download location right now. So we want to be able
+			to check at any time if the mosaic exists so that we can skip processing - we're using this. Otherwise
+			we'd need to do a big refactor that's probably not worth it.
+		"""
+		output_file = os.path.join(str(download_location), str(export_folder), f"{filename}_mosaic.tif")
+		return os.path.exists(output_file)
+
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
 
@@ -404,11 +461,11 @@ class EEDLImage:
 		# "FAILED", "READY", "SUBMITTED" (maybe - double check that - it might be that it waits with UNSUBMITTED),
 		# "RUNNING", "UNSUBMITTED"
 
-		folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 		self.output_folder = os.path.join(str(download_location), str(self.export_folder))
 
 		if self.export_type.lower() == "drive":
 			time.sleep(drive_wait)  # it seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
+			folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		elif self.export_type.lower() == "cloud":
