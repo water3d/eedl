@@ -82,11 +82,12 @@ def merge_csvs_in_folder(folder_path, output_path, sqlite_db=None, sqlite_table=
 	for csv in csvs:
 		print(csv)
 		df = pandas.read_csv(os.path.join(folder_path, csv))
+		df.drop(columns="index", inplace=True, errors="ignore")
 		dfs.append(df)
 
 	# merge all the data frames together
 	final_df = pandas.concat(dfs)
-	final_df.reset_index(inplace=True)
+	final_df.reset_index(drop=True, inplace=True)
 
 	if output_path:
 		final_df.to_csv(output_path)
@@ -96,3 +97,24 @@ def merge_csvs_in_folder(folder_path, output_path, sqlite_db=None, sqlite_table=
 			final_df.to_sql(str(sqlite_table), conn)
 
 	return final_df
+
+
+def merge_many(base_folder, subfolder_name="alfalfa_et"):
+	output_folder = os.path.join(base_folder, "merged_csvs")
+	os.makedirs(output_folder, exist_ok=True)
+
+	folders = [folder for folder in os.listdir(base_folder) if os.path.isdir(os.path.join(base_folder, folder))]
+	for folder in folders:
+		if folder == "merged_csvs":
+			continue
+		print(folder)
+		output_file = os.path.join(output_folder, f"{folder}.csv")
+		input_folder = os.path.join(base_folder, folder, subfolder_name)
+		merge_csvs_in_folder(input_folder, output_file)
+
+	print("Merging all CSVs")
+	mega_output_csv = os.path.join(output_folder, "_all_csvs_merged.csv")
+	mega_output_sqlite = os.path.join(output_folder, "_all_data_merged.sqlite")
+	sqlite_table = "merged_data"
+	merge_csvs_in_folder(output_folder, mega_output_csv, mega_output_sqlite, sqlite_table)
+	print("Done")
