@@ -16,6 +16,7 @@ class GroupedCollectionExtractor():
 		self.all_images = []  # all the exported images are saved here. They can then be operated on once the extractor is complete
 		self.skip_existing = True  # a feature allowing it to resume from crashes. If the mosaic image exists, it skips doing any processing on the rest of it
 		self.on_error = "log"
+		self.filename_description = ""
 
 		self.collection = None
 		self.collection_band = None
@@ -62,12 +63,11 @@ class GroupedCollectionExtractor():
 		:return:
 		"""
 
-		filename_description = "alfalfa_et_ensemble"
 		export_image = EEDLImage(
 			task_registry=task_registry,
 			drive_root_folder=self.drive_root_folder,
 			cloud_bucket=self.cloud_bucket,
-			filename_description=filename_description
+			filename_description=self.filename_description
 		)
 		export_image.zonal_polygons = zonal_features
 		export_image.zonal_use_points = self.zonal_use_points

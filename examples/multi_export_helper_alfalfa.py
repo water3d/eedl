@@ -28,6 +28,7 @@ extractor = GroupedCollectionExtractor(
 	export_type="drive",
 	export_folder="alfalfa_et",
 	download_folder=r"D:\alfalfa_et",
+	filename_description="alfalfa_et_ensemble",
 	zonal_run=True,
 	zonal_areas_of_interest_attr="huc8",
 	zonal_features_path=field_bounds,
