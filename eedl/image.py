@@ -1,8 +1,12 @@
 import os
+import io
 import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+from typing_extensions import TypedDict, NotRequired, Unpack
+import traceback
+import datetime
 
 import ee
 from ee import EEException
@@ -11,32 +15,25 @@ from . import google_cloud
 from . import mosaic_rasters
 from . import zonal
 
+
+class EEExportDict(TypedDict):
+	fileDimensions: Optional[int]
+	folder: NotRequired[Optional[Union[str, Path]]]
+	crs: Optional[str]
+	region: NotRequired[ee.geometry.Geometry]
+	description: str
+	fileNamePrefix: str
+	scale: Union[int, float]
+	maxPixels: Union[int, float]
+	bucket: NotRequired[Optional[str]]
+
+
 DEFAULTS = dict(
 	CRS='EPSG:4326',
-	TILE_SIZE=12800,
+	TILE_SIZE=12800,  # multiple of shardSize default 256
 	EXPORT_FOLDER="ee_exports"
 
 )
-
-
-def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path]]:
-	"""
-	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
-	to do this, but it'll work in many situations.
-
-	:param polygon_path: File location of polygons.
-	:type polygon_path: Union[str, Path]
-	:return: Returns the full path and, depending on the file format, the file name in a dictionary.
-	:rtype: Dict[str, Union[str, Path]]
-	"""
-
-	parts = os.path.split(polygon_path)
-	# If the folder name ends with .gdb and the "filename" doesn't have an extension, assume it's an FGDB.
-	if (parts[0].endswith(".gdb") or parts[0].endswith(".gpkg")) and "." not in parts[1]:
-		return {'fp': parts[0], 'layer': parts[1]}
-	else:
-		return {'fp': polygon_path}
-
 
 def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
@@ -52,6 +49,9 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 	"""
 	folder_search_path: Union[str, Path] = source_location
 	files = [filename for filename in os.listdir(folder_search_path) if filename.startswith(prefix)]
+
+	if len(files) == 0:
+		print(f"Likely Error: Could not find files to download for {prefix} in {folder_search_path} - you likely have a misconfiguration in your export parameters. Future steps may fail.")
 
 	os.makedirs(download_location, exist_ok=True)
 
@@ -72,8 +72,11 @@ class TaskRegistry:
 		Initialized the TaskRegistry class and defaults images to "[]" and the callback function to "None"
 		:return: None
 		"""
-		self.images: List[Image] = []
+		self.images: List[EEDLImage] = []
 		self.callback: Optional[str] = None
+		self.log_file_path: Optional[Union[str, Path]] = None  # the path to the log file
+		self.log_file: Optional[io.TextIOWrapper] = None  # the open log file handle
+		self.raise_errors: bool = True
 
 	def add(self, image: ee.image.Image) -> None:
 		"""
@@ -130,15 +133,48 @@ class TaskRegistry:
 		:return: None
 		"""
 		for image in self.downloadable_tasks:
-			print(f"{image.filename} is ready for download")
-			image.download_results(download_location=download_location, callback=self.callback)
+			try:
+				print(f"{image.filename} is ready for download")
+				image.download_results(download_location=download_location, callback=self.callback)
+			except:  # noqa: E722
+				# on any error raise or log it
+				if self.raise_errors:
+					raise
+
+				error_details = traceback.format_exc()
+				self.log_error("local", f"Failed to process image {image.filename}. Error details: {error_details}")
+
+	def setup_log(self, log_file_path: Union[str, Path], mode='a'):
+		self.log_file_path = log_file_path
+		self.log_file = open(self.log_file_path, 'a')
+
+	def log_error(self, error_type: str, error_message: str):
+		"""
+			:param error_type: Options "ee", "local" to indicate whether it was an error on Earth Engine's side or on
+				the local processing side
+			:param error_message: The error message to print to the log file
+		"""
+		message = f"{error_type} Error: {error_message}"
+		date_string = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+		print(message)
+
+		if self.log_file:
+			self.log_file.write(f"{date_string}: {message}")
+
+	def __del__(self):
+		if self.log_file is not None:
+			try:
+				self.log_file.close()
+			except:  # noqa: E722
+				# if we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
+				pass
 
 	def wait_for_images(self,
 						download_location: Union[str, Path],
 						sleep_time: int = 10,
 						callback: Optional[str] = None,
 						try_again_disk_full: bool = True,
-						on_failure="raise") -> None:
+						on_failure: str = "log") -> None:
 		"""
 		Blocker until there are no more incomplete or downloadable tasks left.
 		:param download_location: Destination for downloaded files.
@@ -151,6 +187,11 @@ class TaskRegistry:
 		:type try_again_disk_full: bool
 		:return: None
 		"""
+
+		if on_failure == "raise":
+			self.raise_errors = True
+		elif on_failure == "log" and self.log_file:  # if they say to log the errors and specified a log file, set raise errors to False
+			self.raise_errors = False
 
 		self.callback = callback
 		while len(self.incomplete_tasks) > 0 or len(self.downloadable_tasks) > 0:
@@ -165,18 +206,22 @@ class TaskRegistry:
 
 			time.sleep(sleep_time)
 
-		if on_failure == "raise" and len(self.failed_tasks) > 0:
-			raise EEException(f"{len(self.failed_tasks)} images failed to export. Example error message from first"
-								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was"
-								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"."
-								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and"
-								f" messages for all export tasks.")
+		if len(self.failed_tasks) > 0:
+			message = f"{len(self.failed_tasks)} images failed to export. Example error message from first" \
+								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was" \
+								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"." \
+								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and" \
+								f" messages for all export tasks."
+			if on_failure == "raise":
+				raise EEException(message)
+			else:
+				print(message)
 
 
 main_task_registry = TaskRegistry()
 
 
-class Image:
+class EEDLImage:
 	"""
 	The main class that does all the work. Any use of this package should instantiate this class for each export
 	the user wants to do. As we refine this, we may be able to provide just a single function in this module named
@@ -208,9 +253,23 @@ class Image:
 		self.export_folder: Optional[Union[str, Path]] = None
 		self.mosaic_image: Optional[Union[str, Path]] = None
 		self.task: Optional[ee.batch.Task] = None
-		self.bucket: Optional[str] = None
+		self.cloud_bucket: Optional[str] = None
 		self._ee_image: Optional[ee.image.Image] = None
 		self.output_folder: Optional[Union[str, Path]] = None
+		self.task_registry = main_task_registry
+
+		self.filename_description = ""
+		self.date_string = ""  # for items that want to store a date representation
+
+		# these values are only used if someone calls the mosaic_and_zonal callback - we need the values defined on
+		# the class to do that
+		self.zonal_polygons: Optional[Union[str, Path]] = None
+		self.zonal_stats_to_calc: Optional[Tuple] = None
+		self.zonal_keep_fields: Optional[Tuple] = None
+		self.zonal_use_points: bool = False
+		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
+		self.zonal_inject_constants: dict = dict()
+		self.zonal_nodata_value: int = -9999
 
 		# Set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here.
 		for key in DEFAULTS:
@@ -224,8 +283,6 @@ class Image:
 		# From the server. "None" would work too, but then we couldn't just check the status.
 		self.task_data_downloaded = False
 		self.export_type = "Drive"  # The other option is "Cloud".
-
-		self.filename_description = ""
 
 	def _set_names(self, filename_suffix: str = "") -> None:
 		"""
@@ -278,8 +335,9 @@ class Image:
 				filename_suffix: str,
 				export_type: str = "drive",
 				clip: Optional[ee.geometry.Geometry] = None,
+				strict_clip: Optional[bool] = False,
 				drive_root_folder: Optional[Union[str, Path]] = None,
-				**export_kwargs) -> None:
+				**export_kwargs: Unpack[EEExportDict]) -> None:
 		"""
 		Handles the exporting of an image
 		:param image: Image for export
@@ -288,69 +346,104 @@ class Image:
 		:type filename_suffix: Str
 		:param export_type: Specifies how the image should be exported. Either "cloud" or "drive". Defaults to "drive".
 		:type export_type: Str
-		:param clip: Defines the clip that should be used
+		:param clip: Defines the region of interest for export - does not perform a strict clip, which is often slower.
+			Instead it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
+			the clip geometry. To clip to the actual geometry, set strict_clip to True
 		:type clip: Optional[ee.geometry.Geometry]
+		:param strict_clip: When set to True, performs a true clip on the result so that it's not just the bounding box
+			but also the actual clipping geometry. Defaults to False
+		:type clip: Optional[bool]
 		:param drive_root_folder: The folder for exporting if "drive" is selected
 		:type drive_root_folder: Optional[Union[str, Path]]
 		:return: None
 		"""
 
-		# If "image" does not have a clip attribute, the error message is not very helpful. This allows for a custom error message:
 		if not isinstance(image, ee.image.Image):
-			raise ValueError("Invalid image provided for export.")
 
-		if export_type.lower() == "drive" and (drive_root_folder is None or not os.path.exists(drive_root_folder)):
+			raise ValueError("Invalid image provided for export - please provide a single image (not a collection or another object) of class ee.image.Image for export")
+
+		if export_type.lower() == "drive" and \
+			(self.drive_root_folder is None or not os.path.exists(self.drive_root_folder)) and \
+			(drive_root_folder is None or not os.path.exists(drive_root_folder)):
+
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
 										" Drive export was specified. Either change the export type to use Google Cloud"
 										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
 										" to a valid folder.")
 		elif export_type.lower() == "drive":
-			self.drive_root_folder = drive_root_folder
+			if drive_root_folder:
+				self.drive_root_folder = drive_root_folder
 
 		self._initialize()
+
+		if clip and not isinstance(clip, ee.geometry.Geometry):
+			raise ValueError("Invalid geometry provided for clipping. Export parameter `clip` must be an instance of ee.geometry.Geometry")
+
+		if clip and strict_clip and isinstance(clip, ee.geometry.Geometry):  #
+			image = image.clip(clip)
 
 		self._ee_image = image
 
 		self._set_names(filename_suffix)
 
-		ee_kwargs = {
+		ee_kwargs: EEExportDict = {
 			'description': self.description,
 			'fileNamePrefix': self.filename,
 			'scale': 30,
 			'maxPixels': 1e12,
-			# multiple of shardSize default 256. Should split into about 9 tiles
 			'fileDimensions': self.tile_size,
 			'crs': self.crs
 		}
 
-		# Get a silent error if clip is not of type ee.geometry.Geometry
 		if isinstance(clip, ee.geometry.Geometry):
 			ee_kwargs["region"] = clip
-		elif clip:
-			raise ValueError("Invalid geometry provided for export.")
 
 		# override any of these defaults with anything else provided
 		ee_kwargs.update(export_kwargs)
 
+		if "folder" not in ee_kwargs:  # if they didn't specify a folder, use the class' default or whatever they defined previously
+			ee_kwargs['folder'] = self.export_folder
+		else:
+			self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later on, and so it's picked up by cloud export code below
+
 		if export_type.lower() == "drive":
-			if "folder" not in ee_kwargs:
-				ee_kwargs['folder'] = self.export_folder
 			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 		elif export_type.lower() == "cloud":
 			# add the folder to the filename here for Google Cloud
 			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
-			self.bucket = str(ee_kwargs['bucket'])
+
+			if "bucket" not in ee_kwargs:  # if we already defined the bucket on the class, use that
+				ee_kwargs['bucket'] = self.cloud_bucket
+			else:  # otherwise, attempt to retrieve it from the call to this function
+				self.cloud_bucket = str(ee_kwargs['bucket'])
+
+			if "folder" in ee_kwargs:  # we made this part of the filename prefix above, so delete it now or it will cause an error.
+				del ee_kwargs["folder"]
+
 			self.task = ee.batch.Export.image.toCloudStorage(self._ee_image, **ee_kwargs)
 
 		# export_type is not valid
 		else:
-			raise ValueError("Invalid value for export_type. Did you mean 'drive' or 'cloud'?")
+			raise ValueError("Invalid value for export_type. Did you mean \"drive\" or \"cloud\"?")
+
 
 		self.task.start()
 
 		self.export_type = export_type
 
-		main_task_registry.add(self)
+		self.task_registry.add(self)
+
+	@staticmethod
+	def check_mosaic_exists(download_location: Union[str, Path], export_folder: Union[str, Path], filename: str):
+		"""
+			This function isn't ideal because it duplicates information - you need to pass it in elsewhere and assume
+			this file format matches, rather than actually calculating the paths earlier in the process. But that's
+			currently necessary because the task registry sets the download location right now. So we want to be able
+			to check at any time if the mosaic exists so that we can skip processing - we're using this. Otherwise
+			we'd need to do a big refactor that's probably not worth it.
+		"""
+		output_file = os.path.join(str(download_location), str(export_folder), f"{filename}_mosaic.tif")
+		return os.path.exists(output_file)
 
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
@@ -369,14 +462,15 @@ class Image:
 		# "FAILED", "READY", "SUBMITTED" (maybe - double check that - it might be that it waits with UNSUBMITTED),
 		# "RUNNING", "UNSUBMITTED"
 
-		folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 		self.output_folder = os.path.join(str(download_location), str(self.export_folder))
+
 		if self.export_type.lower() == "drive":
 			time.sleep(drive_wait)  # it seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
+			folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 
 		elif self.export_type.lower() == "cloud":
-			google_cloud.download_public_export(str(self.bucket), self.output_folder, f"{self.export_folder}/{self.filename}")
+			google_cloud.download_public_export(str(self.cloud_bucket), self.output_folder, f"{self.export_folder}/{self.filename}")
 
 		else:
 			raise ValueError("Unknown export_type (not one of 'drive', 'cloud') - can't download")
@@ -396,6 +490,31 @@ class Image:
 		self.mosaic_image = os.path.join(str(self.output_folder), f"{self.filename}_mosaic.tif")
 		mosaic_rasters.mosaic_folder(str(self.output_folder), self.mosaic_image, prefix=self.filename)
 
+	def mosaic_and_zonal(self) -> None:
+		"""
+			A callback that takes no parameters, but runs mosaic and zonal stats. Runs zonal stats
+			by allowing the user to set all the zonal params on the class instance instead of passing
+			them as params
+		"""
+
+		if not (self.zonal_polygons and self.zonal_keep_fields and self.zonal_stats_to_calc):
+			raise ValueError("Can't run mosaic and zonal callback without `polygons`, `keep_fields, and `stats` values"
+								"set on the class instance.")
+
+		try:
+			use_points = self.zonal_use_points
+		except AttributeError:
+			use_points = False
+
+		self.mosaic()
+		self.zonal_stats(polygons=self.zonal_polygons,
+							keep_fields=self.zonal_keep_fields,
+							stats=self.zonal_stats_to_calc,
+							use_points=use_points,
+							inject_constants=self.zonal_inject_constants,
+							nodata_value=self.zonal_nodata_value
+						)
+
 	def zonal_stats(self,
 					polygons: Union[str, Path],
 					keep_fields: Tuple[str, ...] = ("UniqueID", "CLASS2"),
@@ -403,6 +522,8 @@ class Image:
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
+					inject_constants: dict = dict(),
+					nodata_value: int = -9999
 					) -> None:
 		"""
 
@@ -422,7 +543,8 @@ class Image:
 		:return: None
 		"""
 
-		zonal.zonal_stats(polygons,
+		self.zonal_output_filepath = zonal.zonal_stats(
+							polygons,
 							self.mosaic_image,
 							self.output_folder,
 							self.filename,
@@ -430,7 +552,10 @@ class Image:
 							stats=stats,
 							report_threshold=report_threshold,
 							write_batch_size=write_batch_size,
-							use_points=use_points)
+							use_points=use_points,
+							inject_constants=inject_constants,
+							nodata_value=nodata_value
+						)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 		"""

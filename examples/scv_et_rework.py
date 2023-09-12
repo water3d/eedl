@@ -5,7 +5,7 @@ from ee import ImageCollection
 
 # we should change the name of our Image class - it conflicts with the class image in the ee package, and people will
 # likely be using both. Let's not cause confusion
-from eedl.image import Image
+from eedl.image import EEDLImage
 import eedl
 
 ee.Initialize()
@@ -34,7 +34,7 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 	winter_image = winter_collection_doubles.sum()
 
 	# export the annual image and queue it for download
-	annual_export_image = Image(crs="EPSG:4326")
+	annual_export_image = EEDLImage(crs="EPSG:4326")
 	annual_export_image.export(annual_image,
 								filename_suffix=f"valley_water_ensemble_total_et_mm_{year}",
 								export_type="Drive",
@@ -43,7 +43,7 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 								folder="vw_et_update_2023"
 							)
 
-	winter_export_image = Image(crs="EPSG:4326")
+	winter_export_image = EEDLImage(crs="EPSG:4326")
 	winter_export_image.export(winter_image,
 								filename_suffix=f"valley_water_ensemble_winter_et_mm_{year}",
 								export_type="Drive",
