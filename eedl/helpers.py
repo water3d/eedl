@@ -85,7 +85,7 @@ class GroupedCollectionExtractor():
 		export_image.zonal_inject_constants = zonal_inject_constants
 
 		filename_suffix = f"{aoi_attr}_{image_date}"
-		if self.skip_existing and export_image.check_mosaic_exists(aoi_download_folder, self.export_folder, f"{filename_description}_{filename_suffix}"):
+		if self.skip_existing and export_image.check_mosaic_exists(aoi_download_folder, self.export_folder, f"{self.filename_description}_{filename_suffix}"):
 			print(f"Image {filename_suffix} exists and skip_existing=True. Skipping")
 			return
 

@@ -1,7 +1,7 @@
 import csv
 import os
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Union
+from typing import Iterable, Optional, Union
 
 
 import fiona
@@ -62,7 +62,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	# Note the use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on the
 	# next line, each item isn't evaluated, which should prevent us from needing to store a geojson representation of
 	# all the polygons at one time since we'll strip it off (it'd be bad to try to keep all of it
-  
+
 	output_filepath: Optional[str] = None
 
 	if not (isinstance(features, fiona.Collection) or hasattr(features, "__iter__")):  # if features isn't already a fiona collection instance or something else we can iterate over

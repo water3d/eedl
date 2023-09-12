@@ -35,6 +35,7 @@ DEFAULTS = dict(
 
 )
 
+
 def download_images_in_folder(source_location: Union[str, Path], download_location: Union[str, Path], prefix: str) -> None:
 	"""
 	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
@@ -425,7 +426,6 @@ class EEDLImage:
 		# export_type is not valid
 		else:
 			raise ValueError("Invalid value for export_type. Did you mean \"drive\" or \"cloud\"?")
-
 
 		self.task.start()
 
