@@ -1,7 +1,8 @@
 import csv
 import os
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
+
 
 import fiona
 import rasterstats
@@ -25,20 +26,20 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	#  automatically align them and we just get bad output.
 
 	"""
-
-	:param features: Location to the features
+	If the raster and the polygons are not in the CRS, this function will produce bad output.
+	:param features: Location to the features.
 	:type features: Union[str, Path]
-	:param raster: Location of the raster
+	:param raster: Location of the raster.
 	:type raster: Union[str, Path, None]
-	:param output_folder: Output destination
+	:param output_folder: Output destination.
 	:type output_folder: Union[str, Path, None]
-	:param filename: Name of the file
+	:param filename: Name of the file.
 	:type filename: Str
-	:param keep_fields: Fields that will be used
+	:param keep_fields: Fields that will be used.
 	:type keep_fields: Iterable[str]
 	:param stats: The various statistical measurements to be computed.
 	:type stats: Iterable[str]
-	:param report_threshold: The number of iterations before it prints out the feature number it's on. Default is 1000. Set to None to disable
+	:param report_threshold: The number of iterations before it prints out the feature number it's on. Default is 1000. Set to None to disable.
 	:type report_threshold: Int
 	:param write_batch_size: The number of zones that should be stored up before writing to disk.
 	:type write_batch_size: Int
@@ -62,7 +63,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	# next line, each item isn't evaluated, which should prevent us from needing to store a geojson representation of
 	# all the polygons at one time since we'll strip it off (it'd be bad to try to keep all of it
 
-	output_filepath: Union[str, None] = None
+	output_filepath: Optional[str] = None
 
 	if not (isinstance(features, fiona.Collection) or hasattr(features, "__iter__")):  # if features isn't already a fiona collection instance or something else we can iterate over
 		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
@@ -130,7 +131,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 				if report_threshold and i % report_threshold == 0:
 					print(i)
 
-			if len(results) > 0:  # Clear out any remaining items at the end
+			if results:  # Clear out any remaining items at the end
 				writer.writerows(results)
 				print(i)
 	finally:

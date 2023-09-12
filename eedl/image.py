@@ -40,11 +40,11 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 	"""
 	Handles pulling data from Google Drive over to a local location, filtering by a filename prefix and folder
 
-	:param source_location: Directory to search for files
+	:param source_location: Directory to search for files.
 	:type source_location: Union[str, Path]
-	:param download_location: Destination for files with the specified prefix
+	:param download_location: Destination for files with the specified prefix.
 	:type download_location: Union[str, Path]
-	:param prefix: A prefix to use to filter items in the folder - only files where the name matches this prefix will be moved
+	:param prefix: A prefix to use to filter items in the folder - only files where the name matches this prefix will be moved.
 	:type prefix: str
 	:return: None
 	"""
@@ -57,12 +57,12 @@ def download_images_in_folder(source_location: Union[str, Path], download_locati
 	os.makedirs(download_location, exist_ok=True)
 
 	for filename in files:
-		shutil.move(os.path.join(folder_search_path, filename), os.path.join(download_location, filename))
+		shutil.move(str(os.path.join(folder_search_path, filename)), str(os.path.join(download_location, filename)))
 
 
 class TaskRegistry:
 	"""
-	The TaskRegistry class makes it convent to manage arbitrarily many Earth Engine images that are in varying states of being downloaded.
+	The TaskRegistry class makes it convenient to manage arbitrarily many Earth Engine images that are in varying states of being downloaded.
 	"""
 	INCOMPLETE_STATUSES = ("READY", "UNSUBMITTED", "RUNNING")
 	COMPLETE_STATUSES = ["COMPLETED"]
@@ -81,8 +81,7 @@ class TaskRegistry:
 
 	def add(self, image: ee.image.Image) -> None:
 		"""
-		Adds an Earth Engine image to the list of Earth Engine images
-
+		Adds an Earth Engine image to the list of Earth Engine images.
 		:param image: Earth Engine image to be added to the list of images
 		:type image: ee.image.Image
 		:return: None
@@ -92,9 +91,8 @@ class TaskRegistry:
 	@property
 	def incomplete_tasks(self) -> List[ee.image.Image]:
 		"""
-		List of Earth Engine images that have not been completed yet
-
-		:return: List of Earth Engine images that have not been completed yet
+		List of Earth Engine images that have not been completed yet.
+		:return: List of Earth Engine images that have not been completed yet.
 		:rtype: List[ee.image.Image]
 		"""
 		initial_tasks = [image for image in self.images if image.last_task_status['state'] in self.INCOMPLETE_STATUSES]
@@ -106,30 +104,32 @@ class TaskRegistry:
 	@property
 	def complete_tasks(self) -> List[ee.image.Image]:
 		"""
-		List of Earth Engine images
-
-		:return: List of Earth Engine images
+		List of Earth Engine images.
+		:return: List of Earth Engine images.
 		:rtype: List[ee.image.Image]
 		"""
 		return [image for image in self.images if image.last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
 	def failed_tasks(self) -> List[ee.image.Image]:
+		"""
+		List of Earth Engine images that have either been cancelled or that have failed
+		"""
 		return [image for image in self.images if image.last_task_status['state'] in self.FAILED_STATUSES]
 
 	@property
 	def downloadable_tasks(self) -> List[ee.image.Image]:
 		"""
-		List of Earth Engine images that have successfully been downloaded
-		:return: List of Earth Engine images that have successfully been downloaded
+		List of Earth Engine images that have not been cancelled or have failed.
+		:return: List of Earth Engine images that have not been cancelled or have failed.
 		:rtype: List[ee.image.Image]
 		"""
 		return [image for image in self.complete_tasks if image.task_data_downloaded is False and image.last_task_status['state'] not in self.FAILED_STATUSES]
 
 	def download_ready_images(self, download_location: Union[str, Path]) -> None:
 		"""
-
-		:param download_location: Destination for downloaded files
+		Downloads all images that are ready to be downloaded.
+		:param download_location: Destination for downloaded files.
 		:type download_location: Union[str, Path]
 		:return: None
 		"""
@@ -178,7 +178,6 @@ class TaskRegistry:
 						on_failure: str = "log") -> None:
 		"""
 		Blocker until there are no more incomplete or downloadable tasks left.
-
 		:param download_location: Destination for downloaded files.
 		:type download_location: Union[str, Path]
 		:param sleep_time: Time between checking if the disk is full in seconds. Defaults to 10 seconds.
@@ -235,9 +234,9 @@ class EEDLImage:
 
 	:param crs: Coordinate Reference System to use for exports in a format Earth Engine understands, such as "EPSG:3310"
 	:type crs: Optional[str]
-	:param tile_size: the number of pixels per side of tiles to export
+	:param tile_size: The number of pixels per side of tiles to export
 	:type tile_size: Optional[int]
-	:param export_folder: the name of the folder in the chosen export location that will be created for the export
+	:param export_folder: The name of the folder in the chosen export location that will be created for the export
 	:type export_folder: Optional[Union[str, Path]]
 
 	This docstring needs to be checked to ensure it's in a standard format that Sphinx will render
@@ -273,24 +272,24 @@ class EEDLImage:
 		self.zonal_inject_constants: dict = dict()
 		self.zonal_nodata_value: int = -9999
 
-		# set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here
+		# Set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here.
 		for key in DEFAULTS:
 			setattr(self, key.lower(), DEFAULTS[key])
 
-		for key in kwargs:  # now apply any provided keyword arguments over the top of the defaults.
+		for key in kwargs:  # Now apply any provided keyword arguments over the top of the defaults.
 			setattr(self, key, kwargs[key])
 
 		self._last_task_status = {"state": "UNSUBMITTED"}
-		# this will be the default status initially, so always assume it's UNSUBMITTED if we haven't gotten anything
-		# from the server. "None" would work too, but then we couldn't just check the status
+		# This will be the default status initially, so always assume it's UNSUBMITTED if we haven't gotten anything.
+		# From the server. "None" would work too, but then we couldn't just check the status.
 		self.task_data_downloaded = False
-		self.export_type = "Drive"  # other option is "Cloud"
+		self.export_type = "Drive"  # The other option is "Cloud".
 
 	def _set_names(self, filename_suffix: str = "") -> None:
 		"""
 
 		:param filename_suffix: Suffix used to later identify files.
-		:type filename_suffix: Str
+		:type filename_suffix: str
 		:return: None
 		"""
 		self.description = filename_suffix
@@ -300,15 +299,14 @@ class EEDLImage:
 	def _initialize() -> None:
 		"""
 		Handles the initialization and potentially the authentication of Earth Engine
-
 		:return: None
 		"""
-		try:  # try just a basic discardable operation used in their docs so that we don't initialize if we don't need to
+		try:  # Try just a basic discard-able operation used in their docs so that we don't initialize if we don't need to.
 			_ = ee.Image("NASA/NASADEM_HGT/001")
-		except EEException:  # if it fails, try just running initialize
+		except EEException:  # If it fails, try just running initialize.
 			try:
 				ee.Initialize()
-			except EEException:  # if that still fails, try authenticating first
+			except EEException:  # If that still fails, try authenticating first.
 				ee.Authenticate()
 				ee.Initialize()
 
@@ -327,7 +325,7 @@ class EEDLImage:
 		Sets the value of the private variable "_last_task_status" to a specified value. Realistically, this shouldn't
 		be used as the value should only be set from within the object, but it's here in case it's needed.
 
-		:param new_status: Updated status
+		:param new_status: Status to update the _last_task_status to.
 		:type new_status: Dict[str, str]
 		:return:  None
 		"""
@@ -343,7 +341,6 @@ class EEDLImage:
 				**export_kwargs: Unpack[EEExportDict]) -> None:
 		"""
 		Handles the exporting of an image
-
 		:param image: Image for export
 		:type image: ee.image.Image
 		:param filename_suffix: The unique identifier used internally to identify images.
@@ -363,6 +360,7 @@ class EEDLImage:
 		"""
 
 		if not isinstance(image, ee.image.Image):
+
 			raise ValueError("Invalid image provided for export - please provide a single image (not a collection or another object) of class ee.image.Image for export")
 
 		if export_type.lower() == "drive" and \
@@ -372,7 +370,7 @@ class EEDLImage:
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
 										" Drive export was specified. Either change the export type to use Google Cloud"
 										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
-										" to a valid folder")
+										" to a valid folder.")
 		elif export_type.lower() == "drive":
 			if drive_root_folder:
 				self.drive_root_folder = drive_root_folder
@@ -449,15 +447,15 @@ class EEDLImage:
 
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
-
-		:param download_location: The directory where the results should be downloaded to
+		:param download_location: The directory where the results should be downloaded to. Expects a string path or a Pathlib Path object.
 		:type download_location: Union[str, Path]
-		:param callback: The callback function called once the image is downloaded
+		:param callback: The callback function is called once the image has been downloaded.
 		:type callback: Optional[str]
+		:param drive_wait: The amount of time in seconds to wait to allow for files that Earth Engine reports have been exported to actually populate. Default is 15 seconds.
+		:type drive_wait: int
 		:return: None
 		"""
-		# need an event loop that checks self.task.status(), which
-		# will get the current state of the task
+		# Need an event loop that checks self.task.status(), which will get the current state of the task.
 
 		# state options
 		# == "CANCELLED", "CANCEL_REQUESTED", "COMPLETED",
@@ -536,14 +534,13 @@ class EEDLImage:
 		:param stats:
 		:type stats: Tuple[str, ...]
 		:param report_threshold: After how many iterations should it print out the feature number it's on. Defaults to 1000.
-			Set to None to disable
+			Set to None to disable.
 		:type report_threshold: int
-		:param write_batch_size: How many zones should we store up before writing to the disk? Defaults to 2000
+		:param write_batch_size: How many zones should we store up before writing to the disk? Defaults to 2000.
 		:type write_batch_size: int
 		:param use_points:
 		:type use_points: bool
 		:return: None
-
 		"""
 
 		self.zonal_output_filepath = zonal.zonal_stats(
@@ -564,7 +561,7 @@ class EEDLImage:
 		"""
 		Updates the status is it needs to be changed
 
-		:return: Returns a dictionary of the most up-to-date status and whether it was changed
+		:return: Returns a dictionary of the most up-to-date status and whether that status was changed
 		:rtype: Dict[str, Union[Dict[str, str], bool]]
 		"""
 

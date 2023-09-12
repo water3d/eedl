@@ -10,9 +10,9 @@ from osgeo import gdal
 def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: str = "") -> None:
 	"""
 
-	:param folder_path: Location of the folder
+	:param folder_path: Location of the folder.
 	:type folder_path: Union[str, Path]
-	:param output_path: Output destination
+	:param output_path: Output destination.
 	:type output_path: Union[str, Path]
 	:param prefix: Used to find the files of interest.
 	:type prefix: Str
@@ -49,11 +49,11 @@ def mosaic_rasters(raster_paths: Sequence[Union[str, Path]],
 	vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest', resolution="highest")
 	my_vrt = gdal.BuildVRT(vrt_path, raster_paths, options=vrt_options)
 	# my_vrt = None
-	my_vrt.FlushCache()  # write the VRT out
+	my_vrt.FlushCache()  # Write the VRT out
 	print(f"VRT at {vrt_path}")
 
-	# now let's export it to the output_path as a geotiff
-	driver = gdal.GetDriverByName("GTIFF")  # we'll use VRT driver.CreateCopy
+	# Now let's export it to the output_path as a geotiff
+	driver = gdal.GetDriverByName("GTIFF")  # We'll use VRT driver.CreateCopy
 	vrt_data = gdal.Open(vrt_path)
 	output = driver.CreateCopy(output_path, vrt_data, 0, ["COMPRESS=DEFLATE", ])
 	output.FlushCache()
