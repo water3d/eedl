@@ -1,4 +1,4 @@
-from eedl.image import EEDLImage, main_task_registry  # uses EEDL code
+from eedl.image import EEDLImage, main_task_registry  # used EEDL code at commit 384183d024a9bd699514852141251467de9b5c9f
 import ee
 
 ee.Initialize()
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 				zonal_stats_to_calc=("min", "max", "mean", "std", "count"),
 				zonal_use_points=False,
 				zonal_all_touched=True,
-				scale=4638.3,
+				scale=4638.3,  # value for approximate GRIDMET scale from Earth Engine data catalog.
 			)
 			export.export(mosaic, filename_suffix=f"{year}_{month}", export_type="drive", clip=boundary)
 
