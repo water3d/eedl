@@ -65,7 +65,16 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 
 	output_filepath: Optional[str] = None
 
-	if not (isinstance(features, fiona.Collection) or hasattr(features, "__iter__")):  # if features isn't already a fiona collection instance or something else we can iterate over
+	if not (
+			isinstance(features, fiona.Collection) or
+			(
+				hasattr(features, "__iter__") and
+				not (
+						isinstance(features, str) or
+						isinstance(features, bytes)
+				)
+			)
+	):  # if features isn't already a fiona collection instance or something else we can iterate over
 		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
 		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
 		feats_open = safe_fiona_open(features)

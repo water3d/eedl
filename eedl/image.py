@@ -31,8 +31,8 @@ class EEExportDict(TypedDict):
 DEFAULTS = dict(
 	CRS='EPSG:4326',
 	TILE_SIZE=12800,  # multiple of shardSize default 256
-	EXPORT_FOLDER="ee_exports"
-
+	EXPORT_FOLDER="ee_exports",
+	SCALE=30
 )
 
 
@@ -258,6 +258,7 @@ class EEDLImage:
 		self._ee_image: Optional[ee.image.Image] = None
 		self.output_folder: Optional[Union[str, Path]] = None
 		self.task_registry = main_task_registry
+		self.scale = None
 
 		self.filename_description = ""
 		self.date_string = ""  # for items that want to store a date representation
@@ -271,6 +272,7 @@ class EEDLImage:
 		self.zonal_output_filepath: Optional[Union[str, Path]] = None  # set by self.zonal_stats
 		self.zonal_inject_constants: dict = dict()
 		self.zonal_nodata_value: int = -9999
+		self.zonal_all_touched: bool = False
 
 		# Set the defaults here - this is a nice strategy where we get to define constants near the top that aren't buried in code, then apply them here.
 		for key in DEFAULTS:
@@ -390,7 +392,7 @@ class EEDLImage:
 		ee_kwargs: EEExportDict = {
 			'description': self.description,
 			'fileNamePrefix': self.filename,
-			'scale': 30,
+			'scale': self.scale,
 			'maxPixels': 1e12,
 			'fileDimensions': self.tile_size,
 			'crs': self.crs
@@ -512,7 +514,8 @@ class EEDLImage:
 							stats=self.zonal_stats_to_calc,
 							use_points=use_points,
 							inject_constants=self.zonal_inject_constants,
-							nodata_value=self.zonal_nodata_value
+							nodata_value=self.zonal_nodata_value,
+						 	all_touched=self.zonal_all_touched,
 						)
 
 	def zonal_stats(self,
@@ -523,7 +526,8 @@ class EEDLImage:
 					write_batch_size: int = 2000,
 					use_points: bool = False,
 					inject_constants: dict = dict(),
-					nodata_value: int = -9999
+					nodata_value: int = -9999,
+					all_touched: bool = False
 					) -> None:
 		"""
 
@@ -554,7 +558,8 @@ class EEDLImage:
 							write_batch_size=write_batch_size,
 							use_points=use_points,
 							inject_constants=inject_constants,
-							nodata_value=nodata_value
+							nodata_value=nodata_value,
+							all_touched=all_touched
 						)
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
