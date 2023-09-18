@@ -14,12 +14,12 @@ def get_public_export_urls(bucket_name: str, prefix: str = "") -> List[str]:
 	Downloads items from a *public* Google Cloud Storage Bucket without using a GCloud login. Filters only to files.
 	with the specified prefix.
 
-	:param bucket_name: Name of the Google Cloud Storage Bucket to pull data from.
-	:type bucket_name: str
-	:param prefix: A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
-	:type prefix: str
-	:return: A list of urls.
-	:rtype: List[str]
+	Args:
+		bucket_name (str): Name of the Google Cloud Storage Bucket to pull data from.
+		prefix (str): A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
+
+	Returns:
+		List[str]: A list of urls.
 	"""
 
 	base_url = "https://storage.googleapis.com/"
@@ -40,13 +40,13 @@ def get_public_export_urls(bucket_name: str, prefix: str = "") -> List[str]:
 def download_public_export(bucket_name: str, output_folder: Union[str, Path], prefix: str = "") -> None:
 	"""
 
-	:param bucket_name: Name of the Google Cloud Storage Bucket to pull data from.
-	:type bucket_name: str
-	:param output_folder: Destination folder for exported data.
-	:type output_folder: Union[str, Path]
-	:param prefix: A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
-	:type prefix: str
-	:return: None.
+	Args:
+		bucket_name (str): Name of the Google Cloud Storage Bucket to pull data from.
+		output_folder (Union[str, Path]): Destination folder for exported data.
+		prefix (str): A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
+
+	Returns:
+		None
 	"""
 	# Get the urls of items in the bucket with the specified prefix
 	urls = get_public_export_urls(bucket_name, prefix)
@@ -65,24 +65,22 @@ def download_export(bucket_name: str,
 					delimiter: str = "/",
 					autodelete: bool = True) -> None:
 
-	"""Downloads a blob from the specified bucket.
+	"""
+	Downloads a blob from the specified bucket.
 
 	Modified from Google Cloud sample documentation at
 		https://cloud.google.com/storage/docs/samples/storage-download-file#storage_download_file-python
 		and
 		https://cloud.google.com/storage/docs/samples/storage-list-files-with-prefix
 
-	:param bucket_name: Name of the Google Cloud Storage Bucket to pull data from.
-	:type bucket_name: str
-	:param output_folder: Destination folder for exported data.
-	:type output_folder: Union[str, Path]
-	:param prefix: A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
-	:type prefix: str
-	:param delimiter: Delimiter used for getting the list of blobs in the Google Cloud Storage Bucket. Defaults to "/"
-	:type delimiter: str
-	:param autodelete: Bool for deleting blobs once contents have been installed. Defaults to True
-	:type autodelete: bool
-	:return: None
+	Args:
+		bucket_name (str): Name of the Google Cloud Storage Bucket to pull data from.
+		output_folder (Union[str, Path]): Destination folder for exported data.
+		prefix (str): A prefix to use to filter items in the bucket - only URLs where the path matches this prefix will be returned - defaults to all files.
+		delimiter (str): Delimiter used for getting the list of blobs in the Google Cloud Storage Bucket. Defaults to "/"
+		autodelete (bool): Bool for deleting blobs once contents have been installed. Defaults to True
+	Returns:
+		None
 	"""
 	# The ID of your GCS bucket
 	# bucket_name = "your-bucket-name"

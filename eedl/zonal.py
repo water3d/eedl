@@ -1,7 +1,7 @@
 import csv
 import os
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Union
+from typing import Dict, Iterable, Union
 
 import fiona
 import rasterstats
@@ -12,10 +12,11 @@ def _get_fiona_args(polygon_path: Union[str, Path]) -> Dict[str, Union[str, Path
 	A simple utility that detects if, maybe, we're dealing with an Esri File Geodatabase. This is the wrong way
 	to do this, but it'll work in many situations.
 
-	:param polygon_path: File location of polygons.
-	:type polygon_path: Union[str, Path]
-	:return: Returns the full path and, depending on the file format, the file name in a dictionary.
-	:rtype: Dict[str, Union[str, Path]]
+	Args:
+		polygon_path (Union[str, Path]): File location of polygons.
+
+	Returns:
+		Dict[str, Union[str, Path]]: Returns the full path and, depending on the file format, the file name in a dictionary.
 	"""
 
 	parts = os.path.split(polygon_path)
@@ -41,33 +42,27 @@ def zonal_stats(features: Union[str, Path],
 
 	"""
 	If the raster and the polygons are not in the CRS, this function will produce bad output.
-	:param features: Location to the features.
-	:type features: Union[str, Path]
-	:param raster: Location of the raster.
-	:type raster: Union[str, Path, None]
-	:param output_folder: Output destination.
-	:type output_folder: Union[str, Path, None]
-	:param filename: Name of the file.
-	:type filename: Str
-	:param keep_fields: Fields that will be used.
-	:type keep_fields: Iterable[str]
-	:param stats: The various statistical measurements to be computed.
-	:type stats: Iterable[str]
-	:param report_threshold: The number of iterations before it prints out the feature number it's on. Default is 1000. Set to None to disable.
-	:type report_threshold: Int
-	:param write_batch_size: The number of zones that should be stored up before writing to disk.
-	:type write_batch_size: Int
-	:param use_points: Switch rasterstats to extract using gen_point_query instead of gen_zonal_stats. See rasterstats
-		package documentation for complete information. Get_point_query will get the values of a raster at all vertex
-		locations when provided with a polygon or line. If provided points, it will extract those point values. We set
-		interpolation to the nearest to perform an exact extraction of the cell values. In this codebase's usage, it's
-		assumed that the "features" parameter to this function will be a points dataset (still in the same CRS as the raster)
-		when use_points is True. Additionally, when this is True, the `stats` argument to this function is ignored
-		as only a single value will be extracted as the attribute `value` in the output CSV. Default is False.
-	:type use_points: Bool
-	:param kwargs: Passed through to rasterstats.
-	:return:
-	:rtype: Union[str, Path, None]
+
+	Args:
+		features (Union[str, Path]): Location to the features.
+		raster (Union[str, Path, None]): Location of the raster.
+		output_folder ([Union[str, Path, None]): Output destination.
+		filename (str): Name of the file.
+		keep_fields (Iterable[str]): Fields that will be used.
+		stats (Iterable[str]): The various statistical measurements to be computed.
+		report_threshold (int): The number of iterations before it prints out the feature number it's on. Default is 1000. Set to None to disable.
+		write_batch_size (int): The number of zones that should be stored up before writing to disk.
+		use_points (bool): Switch rasterstats to extract using gen_point_query instead of gen_zonal_stats. See rasterstats
+			package documentation for complete information. Get_point_query will get the values of a raster at all vertex
+			locations when provided with a polygon or line. If provided points, it will extract those point values. We set
+			interpolation to the nearest to perform an exact extraction of the cell values. In this codebase's usage, it's
+			assumed that the "features" parameter to this function will be a points dataset (still in the same CRS as the raster)
+			when use_points is True. Additionally, when this is True, the `stats` argument to this function is ignored
+			as only a single value will be extracted as the attribute `value` in the output CSV. Default is False.
+		kwargs: Passed through to rasterstats.
+
+	Returns:
+		Union[str, Path, None]: Zonal stats
 	"""
 	# Note the use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on the
 	# next line, each item isn't evaluated, which should prevent us from needing to store a geojson representation of
@@ -79,14 +74,12 @@ def zonal_stats(features: Union[str, Path],
 	main_file_path = kwargs['fp']
 	del kwargs['fp']
 
-	output_filepath: Optional[str] = None
-
 	with fiona.open(main_file_path, **kwargs) as feats_open:
 
 		if not use_points:  # If we want to do zonal, open a zonal stats generator
 			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open, raster, stats=stats, geojson_out=True, nodata=-9999, **kwargs)
 			fieldnames = (*stats, *keep_fields)
-			filesuffix = "zonal_stats"
+			file_suffix = "zonal_stats"
 		else:  # Otherwise, open a point query generator.
 			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
 			zstats_results_geo = rasterstats.gen_point_query(feats_open,
@@ -96,7 +89,7 @@ def zonal_stats(features: Union[str, Path],
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
 			fieldnames = ("value", *keep_fields,)  # When doing point queries, we get a field called "value" back with the raster value
-			filesuffix = "point_query"
+			file_suffix = "point_query"
 
 		# Here's a first approach that still stores a lot in memory - it's commented out because we're instead
 		# going to just generate them one by one and write them to a file directly.
@@ -108,7 +101,7 @@ def zonal_stats(features: Union[str, Path],
 		# zstats_results_geo]
 
 		i = 0
-		output_filepath = os.path.join(str(output_folder), f"{filename}_{filesuffix}.csv")
+		output_filepath = os.path.join(str(output_folder), f"{filename}_{file_suffix}.csv")
 		with open(output_filepath, 'w', newline='') as csv_file:
 			writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 			writer.writeheader()
