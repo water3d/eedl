@@ -8,3 +8,4 @@ google-cloud-storage
 setuptools
 requests
 pytest
+typing-extensions

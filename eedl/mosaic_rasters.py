@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Sequence, Union
@@ -19,6 +20,11 @@ def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], 
 		None
 	"""
 	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
+
+	if len(tifs) == 1:  # if we only got one image back, don't both mosaicking, though this will also skip generating overviews.
+		shutil.move(tifs[0], output_path)  # just move the output image to the "mosaic" name, then return
+		return
+
 	mosaic_rasters(tifs, output_path)
 
 
