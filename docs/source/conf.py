@@ -6,7 +6,6 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
-import eedl
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -28,7 +27,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
