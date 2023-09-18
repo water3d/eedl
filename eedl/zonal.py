@@ -10,7 +10,6 @@ import rasterstats
 from eedl.core import safe_fiona_open
 
 
-
 def zonal_stats(features: Union[str, Path, fiona.Collection],
 				raster: Union[str, Path, None],
 				output_folder: Union[str, Path, None],
@@ -30,7 +29,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	If the raster and the polygons are not in the CRS, this function will produce bad output.
 
 	:param features: Location to the features.
-	:type features: Union[str, Path]
+	:type features: Union[str, Path, fiona.Collection]
 	:param raster: Location of the raster.
 	:type raster: Union[str, Path, None]
 	:param output_folder: Output destination.
@@ -69,23 +68,22 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	output_filepath: Optional[str] = None
 
 	if not (
-			isinstance(features, fiona.Collection) or
-			(
-				hasattr(features, "__iter__") and
-				not (
-						isinstance(features, str) or
-						isinstance(features, bytes)
+			isinstance(features, fiona.Collection) or (
+				hasattr(features, "__iter__") and not
+				(
+					isinstance(features, str) or isinstance(features, bytes)
 				)
 			)
-	):  # if features isn't already a fiona collection instance or something else we can iterate over
+	):
+		# if features isn't already a fiona collection instance or something else we can iterate over
 		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
 		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
-		feats_open = safe_fiona_open(features)
-		_feats_opened_in_function = True
+		if isinstance(features, str) or isinstance(features, Path):
+			feats_open = safe_fiona_open(features)
+			_feats_opened_in_function = True
 	else:
 		feats_open = features  # if it's a fiona instance, just use the open instance
-		_feats_opened_in_function = False  # but mark that we didn't open it so we don't close it later
-
+		_feats_opened_in_function = False  # but mark that we didn't open it, so we don't close it later
 	try:
 		if not use_points:  # If we want to do zonal, open a zonal stats generator
 			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open,
@@ -96,7 +94,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 																**kwargs
 															)
 			fieldnames = (*stats, *keep_fields)
-			filesuffix = f"zonal_stats_nodata{nodata_value}"
+			file_suffix = f"zonal_stats_nodata{nodata_value}"
 
 		else:  # Otherwise, open a point query generator.
 			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
@@ -107,7 +105,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
 																**kwargs)
 			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value
-			filesuffix = f"point_query_nodata{nodata_value}"
+			file_suffix = f"point_query_nodata{nodata_value}"
 
 		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # this is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header
 

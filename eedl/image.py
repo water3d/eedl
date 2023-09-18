@@ -270,7 +270,7 @@ class EEDLImage:
 		self._ee_image: Optional[ee.image.Image] = None
 		self.output_folder: Optional[Union[str, Path]] = None
 		self.task_registry = main_task_registry
-		self.scale = None
+		self.scale: Union[int, float] = 1
 
 		self.filename_description = ""
 		self.date_string = ""  # for items that want to store a date representation
@@ -368,15 +368,15 @@ class EEDLImage:
 			filename_suffix (str): The unique identifier used internally to identify images.
 			export_type (str): Specifies how the image should be exported. Either "cloud" or "drive". Defaults to "drive".
 			clip (Optional[ee.geometry.Geometry]): Defines the region of interest for export - does not perform a strict clip, which is often slower.
-				Instead it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
-			the clip geometry. To clip to the actual geometry, set strict_clip to True.
-				strict_clip (Optional[bool]: When set to True, performs a true clip on the result so that it's not just the bounding box but also the
-				 actual clipping geometry. Defaults to False
+				Instead, it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
+				the clip geometry. To clip to the actual geometry, set strict_clip to True.
+			strict_clip (Optional[bool]: When set to True, performs a true clip on the result so that it's not just the bounding box but also the
+				actual clipping geometry. Defaults to False
 			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected
 
 		Returns:
 			None
-
+		"""
 
 		if not isinstance(image, ee.image.Image):
 
@@ -534,7 +534,7 @@ class EEDLImage:
 							use_points=use_points,
 							inject_constants=self.zonal_inject_constants,
 							nodata_value=self.zonal_nodata_value,
-						 	all_touched=self.zonal_all_touched,
+							all_touched=self.zonal_all_touched,
 						)
 
 	def zonal_stats(self,

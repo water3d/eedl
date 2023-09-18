@@ -3,6 +3,7 @@ import ee
 
 ee.Initialize()
 
+
 def get_days(month, year):
 	days = {
 		'01': 31,
@@ -23,7 +24,7 @@ def get_days(month, year):
 
 
 years = (2019, 2020, 2021)
-months = ("01","02","03","04","05","06","07","08","09","10","11","12")
+months = ("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 collection = "IDAHO_EPSCOR/GRIDMET"
 boundary = ee.FeatureCollection("users/nrsantos/swf/western_us_extraction_bound_v2").first().geometry()
 band = "eto"
