@@ -8,6 +8,9 @@ version: 2
 # Set the OS, Python version and other tools you might need
 build:
   os: ubuntu-22.04
+  apt_packages:
+    - gdal-bin=3.5.1
+    - libgdaldev=3.5.1
   tools:
     python: "3.10"
     # You can also specify other tool versions:
@@ -29,8 +32,10 @@ sphinx:
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
   install:
-  - requirements: docs/requirements.txt
-  - requirements: requirements.txt
+    - method: pip
+      path: gdal==3.5.1
+    - requirements: docs/requirements.txt
+    - requirements: requirements.txt
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats:
