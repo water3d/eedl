@@ -4,7 +4,7 @@ EEDL works by using Earth Engine's built in export mechanisms, which can
 send exported images either to Google Drive or to a Google Cloud storage
 bucket. In order for EEDL to finish processing exports - that is, for it
 to handle downloading and mosaicking images for you, you'll need to
-either set up a Google Cloud storage bucket, set to public access,
+either set up a Google Cloud storage bucket, configured for public access,
 or install the Google Drive client on your computer. The package does not
 currently use either the Google Cloud APIs or Google Drive APIs, avoiding
 the need for authentication, but presenting some limits and requirements on
