@@ -18,7 +18,8 @@ build:
       - python -m pip install --upgrade pip
       - export CPLUS_INCLUDE_PATH=/usr/include/gdal
       - export C_INCLUDE_PATH=/usr/include/gdal
-      - pip install GDAL
+      - export OGRVERSION=`ogrinfo --version | grep -oP "\d+\.\d+\.\d+"`
+      - python -m pip install 'gdal==$OGRVERSION'
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
