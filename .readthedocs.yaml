@@ -12,7 +12,7 @@ build:
     python: "3.10"
   jobs:
     pre_install:
-      - sudo apt-get install gdal-bin libgdal-dev
+      - apt-get install gdal-bin libgdal-dev
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
