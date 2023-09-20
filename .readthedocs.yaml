@@ -18,7 +18,9 @@ build:
       - python -m pip install --upgrade pip
       - export CPLUS_INCLUDE_PATH=/usr/include/gdal
       - export C_INCLUDE_PATH=/usr/include/gdal
-      - export OGRVERSION=`ogrinfo --version | grep -oP "\d+\.\d+\.\d+"`
+      - echo ogrinfo --version
+      - echo ogrinfo -- version | grep -oP "\d+\.\d+\.\d+"
+      - export OGRVERSION=`ogrinfo -- version | grep -oP "\d+\.\d+\.\d+"`
       - echo $OGRVERSION
       - python -m pip install 'gdal==$OGRVERSION'
 
