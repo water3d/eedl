@@ -1,10 +1,11 @@
 .. _api:
 
-====
-API
-====
+========================
+EEDL Full API Reference
+========================
 
 .. automodule:: eedl
     :members:
     :undoc-members:
     :show-inheritance:
+    :no-index:

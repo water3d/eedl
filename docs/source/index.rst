@@ -9,7 +9,7 @@ Welcome to the documentation for your project. This is the main index page.
 
     user_guide/index
     examples/index
-    api_reference/index
+    eedl
 
 Indices and tables
 ==================

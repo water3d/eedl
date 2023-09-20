@@ -1,16 +1,8 @@
-eedl package
-============
+EEDL Full API Reference
+=========================
 
 Submodules
 ----------
-
-eedl.google\_cloud module
--------------------------
-
-.. automodule:: eedl.google_cloud
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 eedl.image module
 -----------------
@@ -44,10 +36,10 @@ eedl.zonal module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+eedl.google\_cloud module
+-------------------------
 
-.. automodule:: eedl
+.. automodule:: eedl.google_cloud
    :members:
    :undoc-members:
    :show-inheritance:
