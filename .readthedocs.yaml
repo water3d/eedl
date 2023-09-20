@@ -18,11 +18,10 @@ build:
       - python -m pip install --upgrade pip
       - export CPLUS_INCLUDE_PATH=/usr/include/gdal
       - export C_INCLUDE_PATH=/usr/include/gdal
-      - echo ogrinfo --version
-      - echo ogrinfo -- version | grep -oP "\d+\.\d+\.\d+"
-      - export OGRVERSION=`ogrinfo -- version | grep -oP "\d+\.\d+\.\d+"`
-      - echo $OGRVERSION
-      - python -m pip install 'gdal==$OGRVERSION'
+      - echo apt show gdal-bin
+      - echo apt show gdal-bin | grep -oP "Version: \d+\.\d+\.\d+" | grep -oP "\d+\.\d+\.\d+"
+      - export GDALVERSION=`apt show gdal-bin | grep -oP "Version: \d+\.\d+\.\d+" | grep -oP "\d+\.\d+\.\d+"`
+      - python -m pip install 'gdal==$GDALVERSION'
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
