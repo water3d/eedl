@@ -8,11 +8,16 @@ version: 2
 # Set the OS, Python version and other tools you might need
 build:
   os: ubuntu-22.04
+  apt_packages:
+    - gdal-bin
+    - libgdal-dev
   tools:
     python: "3.10"
   jobs:
     pre_install:
-      - apt-get install gdal-bin libgdal-dev
+      - export CPLUS_INCLUDE_PATH=/usr/include/gdal
+      - export C_INCLUDE_PATH=/usr/include/gdal
+      - pip install GDAL
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
