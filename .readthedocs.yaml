@@ -18,10 +18,6 @@ build:
       - python -m pip install --upgrade pip
       - export CPLUS_INCLUDE_PATH=/usr/include/gdal
       - export C_INCLUDE_PATH=/usr/include/gdal
-      - apt show gdal-bin
-      - apt show gdal-bin | grep -oP "Version.{1} \d+\.\d+\.\d+" | grep -oP "\d+\.\d+\.\d+"
-      - export GDALVERSION=`apt show gdal-bin | grep -oP "Version.{1} \d+\.\d+\.\d+" | grep -oP "\d+\.\d+\.\d+"`
-      - echo $GDALVERSION
       - echo "gdal==$( apt show gdal-bin | grep -oP "Version.{1} \d+\.\d+\.\d+" | grep -oP "\d+\.\d+\.\d+" ) " > gdal_requirement.txt
       - python -m pip install -r gdal_requirement.txt
 
