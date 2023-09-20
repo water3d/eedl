@@ -15,6 +15,7 @@ build:
     python: "3.10"
   jobs:
     pre_install:
+      - python -m pip install --upgrade pip
       - export CPLUS_INCLUDE_PATH=/usr/include/gdal
       - export C_INCLUDE_PATH=/usr/include/gdal
       - pip install GDAL
