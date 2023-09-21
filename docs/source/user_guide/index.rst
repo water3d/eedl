@@ -5,7 +5,7 @@
 What is EEDL?
 ==============
 
-eedl combines the functionality of what normally would take several packages into one. This makes working with eedl easier and more consistent that when working with other modules.
+EEDL combines the functionality of what normally would take several packages into one. This makes working with eedl easier and more stream-lined that when working with other modules.
 
 ====================
 How to install EEDL

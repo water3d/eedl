@@ -37,8 +37,8 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
-html_logo = '_static/White_Logo.png'
-html_favicon = '_static/White_Favicon.ico'
+html_logo = '_static/logos/White_Logo.png'
+html_favicon = '_static/logos/White_Favicon.ico'
 html_static_path = ['_static']
 
 # html_theme_options = {
