@@ -1,7 +1,7 @@
-eedl documentation
+Earth Engine Downloader
 ===========================
-
-eedl Documentation
+EEDL is a utility that simplifies the process of downloading full resolution and
+large area images from Earth Engine possible.
 
 **Useful links**:
 `Installation <https://github.com/water3d/eedl>`_ |
