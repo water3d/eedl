@@ -1,5 +1,7 @@
 # EE Download
 
+![EEDL Logo](docs/source/_static/logo/logo_black.png)
+
 This project aims to make downloading and processing of bulk data from Earth Engine feasible and simple. As of this
 moment, it only supports image exports, but with a goal of supporting ImageCollections and tables at some point in the
 future.
