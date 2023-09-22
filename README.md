@@ -37,6 +37,6 @@ now. We are working on additional details to enable full use of the package.
 Licensing is still in progress with the University of California, but we are aiming for a permissive license. More to come.
 
 ## Authors
-EEDL has been built by Nick Santos and Adam Crawford as part of the Secure Water Future project. This work is supported
+EEDL has been built by Nick Santos and Adam Crawford as part of the [Secure Water Future](https://securewaterfuture.net) project. This work is supported
 by Agriculture and Food Research Initiative Competitive Grant no. 
 2021-69012-35916 from the USDA National Institute of Food and Agriculture. EEDL was built in support of [Water3D](https://waterdecisions.app)
