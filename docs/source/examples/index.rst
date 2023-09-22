@@ -1,8 +1,10 @@
 .. _examples:
 
+Examples
 ==============
-First Example
-==============
+
+Simple Example Exporting a Single ee.Image
+--------------------------------------
 
 .. toctree::
     :caption: Sample code
@@ -13,9 +15,8 @@ This example shows the a simple use case of EEDL. First, you must load in some d
 .. literalinclude:: ../../../examples/basic.py
     :language: python
 
-==============
-Second Example
-==============
+Example Exporting Multiple Images
+----------------------------------------------------------
 
 This example demonstrates a more complicated use case. In this example stuff happens.
 
