@@ -14,10 +14,10 @@ ON_RTD = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'eedl'
+project = 'EEDL'
 copyright = '2023 Regents of the University of California'
 author = 'Nick Santos, Adam Crawford'
-release = '2023.09.19'
+release = '2023.09.26'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
