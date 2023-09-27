@@ -1,3 +1,5 @@
+.. _ExportLocations:
+
 Working with Export Locations - Drive vs. Cloud
 ====================================================
 EEDL works by using Earth Engine's built in export mechanisms, which can
