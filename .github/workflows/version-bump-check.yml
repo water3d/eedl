@@ -12,5 +12,16 @@ jobs:
   Version-Check:
       runs-on: ubuntu-latest
       steps:
-        python -m pip install requests
-        python -c "import requests;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;assert eedl.__version__ > latest"
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Python Ubuntu
+        uses: actions/setup-python@v4
+        if: matrix.os ==  'ubuntu-latest'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Check version is increased
+        run: |
+          python -m pip install requests
+          python -c "import requests;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;assert eedl.__version__ > latest"
