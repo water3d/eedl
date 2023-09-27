@@ -1,0 +1,16 @@
+name: Ensure we bumped the version of the package
+
+on:
+  push:
+    branches:
+      - 'release'
+  pull_request:
+    branches:
+      - 'release'
+
+jobs:
+  Version-Check:
+      runs-on: ubuntu-latest
+      steps:
+        python -m pip install requests
+        python -c "import requests;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;assert eedl.__version__ > latest"
