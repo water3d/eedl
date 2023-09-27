@@ -1,4 +1,4 @@
-name: Ensure we bumped the version of the package
+name: Version bump
 
 on:
   push:
