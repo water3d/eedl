@@ -24,3 +24,9 @@ jobs:
         run: |
           pip install mypy types-requests pandas-stubs typing_extensions
           mypy -p eedl --enable-incomplete-feature=Unpack
+
+  Version-Check:
+      runs-on: ubuntu-latest
+      steps:
+        python -m pip install requests
+        python -c "import requests;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;assert eedl.__version__ > latest"
