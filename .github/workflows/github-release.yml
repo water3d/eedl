@@ -22,17 +22,10 @@ jobs:
         id: get_version
         run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create a Release
+        uses: elgohr/Github-Release-Action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release ${{ steps.get_version.outputs.version }}
-          body: |
-            Release ${{ steps.get_version.outputs.version }}
-
-      - name: Upload Distribution
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist
-          path: dist/*
+          run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
+          title: ${{ steps.get_version.outputs.version }}
