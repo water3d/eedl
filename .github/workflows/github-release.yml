@@ -22,10 +22,13 @@ jobs:
         id: get_version
         run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
 
+      - name: Extract version from eedl package
+        run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
+
+
       - name: Create a Release
         uses: elgohr/Github-Release-Action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
           title: ${{ steps.get_version.outputs.version }}
