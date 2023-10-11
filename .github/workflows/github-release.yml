@@ -1,0 +1,38 @@
+name: Release Workflow
+
+on:
+  push:
+    branches:
+      - release
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Extract version from eedl package
+        id: get_version
+        run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            Release ${{ steps.get_version.outputs.version }}
+
+      - name: Upload Distribution
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/*
