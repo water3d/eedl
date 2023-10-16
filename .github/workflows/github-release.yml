@@ -22,7 +22,7 @@ jobs:
         id: get_version
         run: |
           version=$(python -c "from eedl import __version__; print(__version__)")
-          echo "version=$version" >> $GITHUB_ENV
+          echo "VERSION=$version" >> $GITHUB_ENV
 
 
       - name: Create a Release
@@ -31,4 +31,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
         with:
-          title: ${{ version }}
+          title: ${{ env.VERSION }}
