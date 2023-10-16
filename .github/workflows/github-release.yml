@@ -20,7 +20,9 @@ jobs:
 
       - name: Extract version from eedl package
         id: get_version
-        run: echo "::set-output name=version::$(python -c "from eedl import __version__; print(__version__)")"
+        run: |
+          version=$(python -c "from eedl import __version__; print(__version__)")
+          echo "version=$version" >> $GITHUB_ENV
 
 
       - name: Create a Release
@@ -29,4 +31,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
         with:
-          title: ${{ steps.get_version.outputs.version }}
+          title: ${{ version }}
