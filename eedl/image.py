@@ -181,7 +181,7 @@ class TaskRegistry:
 			try:
 				self.log_file.close()
 			except:  # noqa: E722
-				# if we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
+				# If we get any exception while closing it, don't make noise, just move on. We're just trying to be clean here where we can
 				pass
 
 	def wait_for_images(self,
@@ -198,6 +198,7 @@ class TaskRegistry:
 			sleep_time (int): Time between checking if the disk is full in seconds. Defaults to 10 seconds.
 			callback (Optional[str]): Optional callback function. Executed after image has been downloaded.
 			try_again_disk_full (bool): Will continuously retry to download images that are ready if disk is full.
+			on_failure (str): ***Needs language***
 
 		Returns:
 			None
@@ -254,7 +255,7 @@ class EEDLImage:
 
 	def __init__(self, **kwargs) -> None:
 		"""
-		Initializes many class variables and sets provided kwargs
+		Initializes many class variables and sets provided kwargs.
 
 		Returns:
 			None
@@ -273,10 +274,10 @@ class EEDLImage:
 		self.scale: Union[int, float] = 1
 
 		self.filename_description = ""
-		self.date_string = ""  # for items that want to store a date representation
+		self.date_string = ""  # For items that want to store a date representation.
 
-		# these values are only used if someone calls the mosaic_and_zonal callback - we need the values defined on
-		# the class to do that
+		# These values are only used if someone calls the mosaic_and_zonal callback - we need the values defined on.
+		# The class to do that.
 		self.zonal_polygons: Optional[Union[str, Path]] = None
 		self.zonal_stats_to_calc: Optional[Tuple] = None
 		self.zonal_keep_fields: Optional[Tuple] = None
@@ -301,7 +302,6 @@ class EEDLImage:
 
 	def _set_names(self, filename_suffix: str = "") -> None:
 		"""
-
 		Args:
 			filename_suffix (str): Suffix used to later identify files.
 
@@ -314,7 +314,7 @@ class EEDLImage:
 	@staticmethod
 	def _initialize() -> None:
 		"""
-		Handles the initialization and potentially the authentication of Earth Engine
+		Handles the initialization and potentially the authentication of Earth Engine.
 
 		Returns:
 			None
@@ -364,15 +364,15 @@ class EEDLImage:
 		Handles the exporting of an image.
 
 		Args:
-			image (ee.image.Image): Image for export
+			image (ee.image.Image): Image for export.
 			filename_suffix (str): The unique identifier used internally to identify images.
 			export_type (str): Specifies how the image should be exported. Either "cloud" or "drive". Defaults to "drive".
 			clip (Optional[ee.geometry.Geometry]): Defines the region of interest for export - does not perform a strict clip, which is often slower.
 				Instead, it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
 				the clip geometry. To clip to the actual geometry, set strict_clip to True.
 			strict_clip (Optional[bool]: When set to True, performs a true clip on the result so that it's not just the bounding box but also the
-				actual clipping geometry. Defaults to False
-			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected
+				actual clipping geometry. Defaults to False.
+			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected.
 
 		Returns:
 			None
@@ -418,26 +418,26 @@ class EEDLImage:
 		if isinstance(clip, ee.geometry.Geometry):
 			ee_kwargs["region"] = clip
 
-		# override any of these defaults with anything else provided
+		# Override any of these defaults with anything else provided.
 		ee_kwargs.update(export_kwargs)
 
-		if "folder" not in ee_kwargs:  # if they didn't specify a folder, use the class' default or whatever they defined previously
+		if "folder" not in ee_kwargs:  # If they didn't specify a folder, use the class' default or whatever they defined previously.
 			ee_kwargs['folder'] = self.export_folder
 		else:
-			self.export_folder = ee_kwargs['folder']  # we need to persist this so we can find the image later on, and so it's picked up by cloud export code below
+			self.export_folder = ee_kwargs['folder']  # We need to persist this, so we can find the image later on, and so it's picked up by cloud export code below.
 
 		if export_type.lower() == "drive":
 			self.task = ee.batch.Export.image.toDrive(self._ee_image, **ee_kwargs)
 		elif export_type.lower() == "cloud":
-			# Add the folder to the filename here for Google Cloud
+			# Add the folder to the filename here for Google Cloud.
 			ee_kwargs['fileNamePrefix'] = f"{self.export_folder}/{ee_kwargs['fileNamePrefix']}"
 
-			if "bucket" not in ee_kwargs:  # if we already defined the bucket on the class, use that
+			if "bucket" not in ee_kwargs:  # If we already defined the bucket on the class, use that.
 				ee_kwargs['bucket'] = self.cloud_bucket
-			else:  # otherwise, attempt to retrieve it from the call to this function
+			else:  # Otherwise, attempt to retrieve it from the call to this function.
 				self.cloud_bucket = str(ee_kwargs['bucket'])
 
-			if "folder" in ee_kwargs:  # we made this part of the filename prefix above, so delete it now or it will cause an error.
+			if "folder" in ee_kwargs:  # We made this part of the filename prefix above, so delete it now, or it will cause an error.
 				del ee_kwargs["folder"]
 
 			self.task = ee.batch.Export.image.toCloudStorage(self._ee_image, **ee_kwargs)
@@ -458,7 +458,7 @@ class EEDLImage:
 			This function isn't ideal because it duplicates information - you need to pass it in elsewhere and assume
 			this file format matches, rather than actually calculating the paths earlier in the process. But that's
 			currently necessary because the task registry sets the download location right now. So we want to be able
-			to check at any time if the mosaic exists so that we can skip processing - we're using this. Otherwise
+			to check at any time if the mosaic exists so that we can skip processing - we're using this. Otherwise,
 			we'd need to do a big refactor that's probably not worth it.
 		"""
 		output_file = os.path.join(str(download_location), str(export_folder), f"{filename}_mosaic.tif")
@@ -485,7 +485,7 @@ class EEDLImage:
 		self.output_folder = os.path.join(str(download_location), str(self.export_folder))
 
 		if self.export_type.lower() == "drive":
-			time.sleep(drive_wait)  # it seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
+			time.sleep(drive_wait)  # It seems like there's often a race condition where EE reports export complete, but no files are found. Give things a short time to sync up.
 			folder_search_path = os.path.join(str(self.drive_root_folder), str(self.export_folder))
 			download_images_in_folder(folder_search_path, self.output_folder, prefix=self.filename)
 

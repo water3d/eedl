@@ -9,7 +9,7 @@ from osgeo import gdal
 
 def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], prefix: str = "") -> None:
 	"""
-	Testing
+	***Needs language***
 
 	Args:
 		folder_path (Union[str, Path]): Location of the folder.
@@ -21,8 +21,8 @@ def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], 
 	"""
 	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
 
-	if len(tifs) == 1:  # if we only got one image back, don't both mosaicking, though this will also skip generating overviews.
-		shutil.move(tifs[0], output_path)  # just move the output image to the "mosaic" name, then return
+	if len(tifs) == 1:  # If we only got one image back, don't both mosaicking, though this will also skip generating overviews.
+		shutil.move(tifs[0], output_path)  # Just move the output image to the "mosaic" name, then return.
 		return
 
 	mosaic_rasters(tifs, output_path)
@@ -52,8 +52,8 @@ def mosaic_rasters(raster_paths: Sequence[Union[str, Path]],
 	my_vrt.FlushCache()  # Write the VRT out
 	print(f"VRT at {vrt_path}")
 
-	# Now let's export it to the output_path as a geotiff
-	driver = gdal.GetDriverByName("GTIFF")  # We'll use VRT driver.CreateCopy
+	# Now let's export it to the output_path as a geotiff.
+	driver = gdal.GetDriverByName("GTIFF")  # We'll use VRT driver.CreateCopy.
 	vrt_data = gdal.Open(vrt_path)
 	output = driver.CreateCopy(output_path, vrt_data, 0, ["COMPRESS=DEFLATE", ])
 	output.FlushCache()
