@@ -63,7 +63,7 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 	"""
 	# Note the use of gen_zonal_stats, which uses a generator. That should mean that until we coerce it to a list on the
 	# next line, each item isn't evaluated, which should prevent us from needing to store a geojson representation of
-	# all the polygons at one time since we'll strip it off (it'd be bad to try to keep all of it
+	# all the polygons at one time since we'll strip it off (it'd be bad to try to keep all of it.
 
 	output_filepath: Optional[str] = None
 
@@ -75,17 +75,17 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 				)
 			)
 	):
-		# if features isn't already a fiona collection instance or something else we can iterate over
+		# If features isn't already a fiona collection instance or something else, we can iterate over.
 		# A silly hack to get fiona to open GDB data by splitting it only if the input is a gdb data item, then providing
-		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg
+		# anything else as kwargs. But fiona requires the main item to be an arg, not a kwarg.
 		if isinstance(features, str) or isinstance(features, Path):
 			feats_open = safe_fiona_open(features)
 			_feats_opened_in_function = True
 	else:
-		feats_open = features  # if it's a fiona instance, just use the open instance
-		_feats_opened_in_function = False  # but mark that we didn't open it, so we don't close it later
+		feats_open = features  # If it's a fiona instance, just use the open instance.
+		_feats_opened_in_function = False  # But mark that we didn't open it, so we don't close it later.
 	try:
-		if not use_points:  # If we want to do zonal, open a zonal stats generator
+		if not use_points:  # If we want to do zonal, open a zonal stats generator.
 			zstats_results_geo = rasterstats.gen_zonal_stats(feats_open,
 																raster,
 																stats=stats,
@@ -100,23 +100,23 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 			# TODO: Need to make it convert the polygons to points here, otherwise it'll get the vertex data
 			zstats_results_geo = rasterstats.gen_point_query(feats_open,
 																raster,
-																geojson_out=True,  # Need this to get extra attributes back
+																geojson_out=True,  # Need this to get extra attributes back.
 																nodata=nodata_value,
-																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points
+																interpolate="nearest",  # Need this or else rasterstats uses a mix of nearby cells, even for single points.
 																**kwargs)
-			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value
+			fieldnames = ("value", *keep_fields)  # When doing point queries, we get a field called "value" back with the raster value.
 			file_suffix = f"point_query_nodata{nodata_value}"
 
-		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # this is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header
+		fieldnames_headers = (*fieldnames, *inject_constants.keys())  # This is separate because we use fieldnames later to pull out data - the constants are handled separately, but we need to write this to the CSV as a header.
 
 		# Here's a first approach that still stores a lot in memory - it's commented out because we're instead
 		# going to just generate them one by one and write them to a file directly.
 		#
 		# This next line is doing a lot of work. It's a dictionary comprehension inside a list comprehension -
 		# we're going through each item in the results, then accessing just the properties key and constructing a new
-		# dictionary just for the keys we want to keep - the keep fields (the key and a class field by defaiult) and
-		# the stats fields zstats_results = [{key: poly['properties'][key] for key in fieldnames} for poly in
-		# zstats_results_geo]
+		# dictionary just for the keys we want to keep - the keep fields (the key and a class field by default) and
+		# the stats fields.
+		# zstats_results = [{key: poly['properties'][key] for key in fieldnames} for poly in zstats_results_geo]
 
 		i = 0
 		output_filepath = os.path.join(str(output_folder), f"{filename}_{file_suffix}.csv")
@@ -124,29 +124,29 @@ def zonal_stats(features: Union[str, Path, fiona.Collection],
 			writer = csv.DictWriter(csv_file, fieldnames=fieldnames_headers)
 			writer.writeheader()
 			results = []
-			for poly in zstats_results_geo:  # Get the result for the polygon, then filter the keys with the dictionary comprehension below
+			for poly in zstats_results_geo:  # Get the result for the polygon, then filter the keys with the dictionary comprehension below.
 				result = {key: poly['properties'][key] for key in fieldnames}
 
-				for key in result:  # truncate the floats
+				for key in result:  # Truncate the floats.
 					if type(result[key]) is float:
 						result[key] = f"{result[key]:.5f}"
 
-				result = {**result, **inject_constants}  # merge in the constants
+				result = {**result, **inject_constants}  # Merge in the constants.
 
 				i += 1
 				results.append(result)
 				if i % write_batch_size == 0:
-					writer.writerows(results)  # Then write the lone result out one at a time to not store it all in RAM
+					writer.writerows(results)  # Then write the lone result out one at a time to not store it all in RAM.
 					results = []
 
 				if report_threshold and i % report_threshold == 0:
 					print(i)
 
-			if results:  # Clear out any remaining items at the end
+			if results:  # Clear out any remaining items at the end.
 				writer.writerows(results)
 				print(i)
 	finally:
-		if _feats_opened_in_function:  # if we opened the fiona object here, close it. Otherwise, leave it open
+		if _feats_opened_in_function:  # If we opened the fiona object here, close it. Otherwise, leave it open.
 			feats_open.close()
 
 	return output_filepath
