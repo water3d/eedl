@@ -13,7 +13,8 @@ large area images from Earth Engine possible.
     :maxdepth: 2
     :caption: Table of Contents
 
-    user_guide/index
+    user_guide/about
+    user_guide/working_with_eedl
     examples/index
     eedl
 
