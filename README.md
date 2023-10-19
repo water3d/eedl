@@ -14,11 +14,11 @@ Earth Engine's export quotas still apply, especially for EECUs. For academic acc
 not tested them on a commercial account.
 
 ## Installation
-The package is still in development and we have not yet published to PyPI (pip) or conda, but have built infrastructure
-for both. Current installation is to download this repository then run `python setup.py install`
+The package is available on PyPI via pip as `python -m pip install eedl`, and can also
+be downloaded from the [GitHub releases page](https://github.com/water3d/eedl/releases/).
 
 EEDL is tested on Python 3.8-3.11 on Windows and Linux with both standard CPython and Anaconda distributions. EEDL is pure
-Python, but depends on GDAL, which has numerous compiled C++ dependencies.
+Python, but depends on GDAL, which has numerous compiled C++ dependencies where installation varies by platform.
 
 ### Windows
 Windows users may want to use Anaconda, or [see this writeup about installing GDAL and other spatial packages on Windows](https://github.com/nickrsan/spatial_resources/edit/main/installing_spatial_python_windows.md).
