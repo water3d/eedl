@@ -35,7 +35,7 @@ Documentation is under development at https://eedl.readthedocs.io. API documenta
 now. We are working on additional details to enable full use of the package.
 
 ## Licensing
-Licensing is still in progress with the University of California, but we are aiming for a permissive license. More to come.
+EEDL is licensed under the MIT license. See <a href="https://github.com/water3d/eedl/blob/main/LICENSE">GitHub's license text and summary</a> for more details of what you can do with it.
 
 ## Authors
 EEDL has been built by Nick Santos and Adam Crawford as part of the [Secure Water Future](https://securewaterfuture.net) project. This work is supported
