@@ -61,3 +61,14 @@ to the bucket, so those do not become public.
         the files available externally, or want the most reliable
         export method, using Google Cloud exports may be a good option
         for you.
+
+Due to the current way EEDL pulls images from Google Cloud Storage, there
+is a limit of 1000 tiles per exported image, though more than 1000 tiles can
+be waited for at a time for multiple image exports. Few single image exports
+will hit this limit - by default, EEDL allows 12800 pixels per side of a tile,
+configurable to more or less if your image requires (especially multiband images).
+Broad-scale, but high resolution images may hit this limit and will either need
+to export to Google Drive, or will need to build an improved implementation
+for pulling tiles from Google Cloud. The limit stems from Google Cloud Storage's
+public bucket listing only providing 1000 items - EEDL doesn't detect or traverse
+pages at this time.
