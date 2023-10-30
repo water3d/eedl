@@ -56,11 +56,20 @@ class GroupedCollectionExtractor():
 
 	def _single_item_extract(self, image, task_registry, zonal_features, aoi_attr, ee_geom, image_date, aoi_download_folder):
 		"""
-			This looks a bit silly here, but we need to construct this here so that we have access
-			to this method's variables since we can't pass them in and it can't be a class function.
-			:param image:
-			:param state:
-			:return:
+		This looks a bit silly here, but we need to construct this here so that we have access
+		to this method's variables since we can't pass them in and it can't be a class function.
+
+		Args:
+			image:
+			task_registry:
+			zonal_features:
+			aoi_attr:
+			ee_geom:
+			image_date:
+			aoi_download_folder:
+
+		Returns:
+			None
 		"""
 
 		export_image = EEDLImage(
@@ -188,9 +197,9 @@ class GroupedCollectionExtractor():
 
 def mosaic_by_date(image_collection):
 	"""
-		Adapted to Python from code found via https://gis.stackexchange.com/a/343453/1955
-		:param image_collection: An image collection
-		:return: ee.ImageCollection
+	Adapted to Python from code found via https://gis.stackexchange.com/a/343453/1955
+	:param image_collection: An image collection
+	:return: ee.ImageCollection
 	"""
 	image_list = image_collection.toList(image_collection.size())
 
