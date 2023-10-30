@@ -81,7 +81,7 @@ class TaskRegistry:
 		self.log_file: Optional[io.TextIOWrapper] = None  # the open log file handle
 		self.raise_errors: bool = True
 
-	def add(self, image: EEDLImage) -> None:
+	def add(self, image: "EEDLImage") -> None:
 		"""
 		Adds an Earth Engine image to the list of Earth Engine images.
 
@@ -94,7 +94,7 @@ class TaskRegistry:
 		self.images.append(image)
 
 	@property
-	def incomplete_tasks(self) -> List[EEDLImage]:
+	def incomplete_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have not been completed yet.
 
@@ -108,7 +108,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.INCOMPLETE_STATUSES]
 
 	@property
-	def complete_tasks(self) -> List[EEDLImage]:
+	def complete_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images.
 
@@ -118,7 +118,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
-	def failed_tasks(self) -> List[EEDLImage]:
+	def failed_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have either been cancelled or that have failed
 
@@ -128,7 +128,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.FAILED_STATUSES]
 
 	@property
-	def downloadable_tasks(self) -> List[EEDLImage]:
+	def downloadable_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have not been cancelled or have failed.
 
