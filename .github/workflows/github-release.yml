@@ -41,4 +41,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload $(gh release view latest --json name --repo AdamJCrawford/eedl | jq -r .name) dist/*.whl
+          gh release upload $(gh release view --json tagName | jq -r .tagName) dist/*.whl
