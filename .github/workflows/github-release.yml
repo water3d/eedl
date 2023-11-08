@@ -23,8 +23,11 @@ jobs:
         run: |
           version=$(python -c "from eedl import __version__; print(__version__)")
           echo "VERSION=$version" >> $GITHUB_ENV
+
       - name: Build WHL file
-        run: python setup.py bdist_wheel
+        run: |
+          pip install setuptools wheel
+          python setup.py bdist_wheel
 
       - name: Create a Release
         uses: elgohr/Github-Release-Action@v5
