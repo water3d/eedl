@@ -156,8 +156,8 @@ class GroupedCollectionExtractor():
 							zonal_features = zonal_features_filtered
 
 						image = aoi_collection.filter(ee.Filter.eq("system:time_start", image_info[1])).first()  # Get the image from the collection again based on ID.
-						timsetamp_in_seconds = int(str(image_info[1])[:-3])  # We could divide by 1000, but then we'd coerce back from a float. This is precise.
-						date_string = datetime.datetime.fromtimestamp(timsetamp_in_seconds, tz=datetime.timezone.utc).strftime("%Y-%m-%d")
+						timestamp_in_seconds = int(str(image_info[1])[:-3])  # We could divide by 1000, but then we'd coerce back from a float. This is precise.
+						date_string = datetime.datetime.fromtimestamp(timestamp_in_seconds, tz=datetime.timezone.utc).strftime("%Y-%m-%d")
 
 						self._single_item_extract(image, task_registry, zonal_features, aoi_attr, ee_geom, date_string, aoi_download_folder)
 

@@ -218,7 +218,7 @@ class TaskRegistry:
 				self.download_ready_images(download_location)
 			except OSError:
 				if try_again_disk_full:
-					print("OSError reported. Disk may be full - will try again - clear space")
+					print("OSError reported. Invalid disk or the disk may be full - will try again - clear space")
 					pass
 				else:
 					raise
