@@ -39,6 +39,7 @@ jobs:
 
       - name: Upload WHL file to Release
         run: |
+          python print(date)
           gh release upload "$(date +'%Y%m%d%H%M%S')" dist/*.whl
         env:
           GH_TOKEN: ${{ github.token }}
