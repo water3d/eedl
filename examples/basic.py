@@ -17,4 +17,3 @@ def test_simple() -> None:
 	# We need to make it check and report whether the export on the EE side was successful. This test "passed" because Earth Engine failed and there wasn't anything to download (oops)
 	# Adam, make sure to set the folder you want results to be downloaded to
 	eedl.image.main_task_registry.wait_for_images(r"D:\ee_export_test", sleep_time=60, callback="mosaic")
-	
