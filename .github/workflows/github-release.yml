@@ -29,16 +29,9 @@ jobs:
           pip install setuptools wheel
           python setup.py bdist_wheel
 
-      - name: Create a Release
-        uses: elgohr/Github-Release-Action@v5
+      - name: Create and attach whl to Release
         env:
           GH_TOKEN: ${{ github.token }}
 
-        with:
-          title: ${{ env.VERSION }}
-
-      - name: Upload WHL file to Release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload $(gh release view --json tagName | jq -r .tagName) dist/*.whl
+          gh release create ${{env.VERSION}} ./dist/*.whl --generate-notes
