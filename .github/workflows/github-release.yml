@@ -32,5 +32,6 @@ jobs:
       - name: Create and attach whl to Release
         env:
           GH_TOKEN: ${{ github.token }}
+          
         run: |
           gh release create ${{ env.VERSION }} ./dist/*.whl --generate-notes
