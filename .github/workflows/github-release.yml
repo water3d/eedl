@@ -24,10 +24,14 @@ jobs:
           version=$(python -c "from eedl import __version__; print(__version__)")
           echo "VERSION=$version" >> $GITHUB_ENV
 
-      - name: Create a Release
-        uses: elgohr/Github-Release-Action@v5
+      - name: Build WHL file
+        run: |
+          pip install setuptools wheel
+          python setup.py bdist_wheel
+
+      - name: Create and attach whl to Release
         env:
           GH_TOKEN: ${{ github.token }}
 
-        with:
-          title: ${{ env.VERSION }}
+        run: |
+          gh release create ${{ env.VERSION }} ./dist/*.whl --generate-notes
