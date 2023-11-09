@@ -33,4 +33,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create -t ${{ env.VERSION }} ./dist/*.whl --generate-notes
+          gh release create -t "${{ env.VERSION }}" ./dist/*.whl --generate-notes
