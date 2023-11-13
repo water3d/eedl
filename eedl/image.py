@@ -226,7 +226,7 @@ class TaskRegistry:
 			time.sleep(sleep_time)
 
 		if len(self.failed_tasks) > 0:
-			message = f"{len(self.failed_tasks)} images failed to export. Example error message from first" \
+			message = f"{len(self.failed_tasks)} image(s) failed to export. Example error message from first" \
 								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was" \
 								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"." \
 								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and" \
@@ -373,7 +373,7 @@ class EEDLImage:
 			clip (Optional[ee.geometry.Geometry]): Defines the region of interest for export - does not perform a strict clip, which is often slower.
 				Instead, it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
 				the clip geometry. To clip to the actual geometry, set strict_clip to True.
-			strict_clip (Optional[bool]: When set to True, performs a true clip on the result so that it's not just the bounding box but also the
+			strict_clip (Optional[bool]): When set to True, performs a true clip on the result so that it's not just the bounding box but also the
 				actual clipping geometry. Defaults to False.
 			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected.
 

@@ -1,17 +1,15 @@
 import os
-from typing import Iterable
+from typing import Iterable, Optional
 import ee
 from ee import ImageCollection
 
-# we should change the name of our Image class - it conflicts with the class image in the ee package, and people will
-# likely be using both. Let's not cause confusion
 from eedl.image import EEDLImage
 import eedl
 
 ee.Initialize()
 
 
-def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/GRIDMET/MONTHLY/v2_0", band="et_ensemble_mad") -> Iterable:
+def scv_data_download_for_year(year: str, openet_collection: str = r"OpenET/ENSEMBLE/CONUS/GRIDMET/MONTHLY/v2_0", band: str = "et_ensemble_mad") -> Iterable[EEDLImage, EEDLImage]:
 	geometry = ee.FeatureCollection("users/nrsantos/vw_extraction_mask").geometry()
 
 	# so, we need two images per year - one is for all months, the other is for just the winter months
@@ -52,7 +50,7 @@ def scv_data_download_for_year(year, openet_collection=r"OpenET/ENSEMBLE/CONUS/G
 								folder="vw_et_update_2023"
 							)
 
-	return (annual_export_image, winter_export_image)
+	return annual_export_image, winter_export_image
 	# return (annual_export_image, )
 
 
@@ -64,8 +62,11 @@ field_boundaries_by_year = {
 							}
 
 
-def download_updated_vw_et_images_by_year(download_folder=r"D:\vw_et_update_2023",
-											field_boundaries=field_boundaries_by_year) -> None:
+def download_updated_vw_et_images_by_year(download_folder: str = r"D:\vw_et_update_2023",
+											field_boundaries: Optional[dict[str: str]] = None) -> None:
+	if field_boundaries is None:
+		field_boundaries = field_boundaries_by_year
+
 	exports_by_year = {}
 
 	print("Running exports")
