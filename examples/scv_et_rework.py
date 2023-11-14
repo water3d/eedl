@@ -1,5 +1,5 @@
 import os
-from typing import Iterable, Optional
+from typing import Iterable
 import ee
 from ee import ImageCollection
 
