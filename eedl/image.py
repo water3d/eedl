@@ -390,9 +390,9 @@ class EEDLImage:
 			(drive_root_folder is None or not os.path.exists(drive_root_folder)):
 
 			raise NotADirectoryError("The provided path for the Google Drive export folder is not a valid directory but"
-										"Drive export was specified. Either change the export type to use Google Cloud"
-										"and set that up properly (with a bucket, etc), or set the drive_root_folder"
-										"to a valid folder.")
+										" Drive export was specified. Either change the export type to use Google Cloud"
+										" and set that up properly (with a bucket, etc), or set the drive_root_folder"
+										" to a valid folder.")
 		elif export_type.lower() == "drive":
 			if drive_root_folder:
 				self.drive_root_folder = drive_root_folder

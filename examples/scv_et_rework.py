@@ -63,9 +63,7 @@ field_boundaries_by_year = {
 
 
 def download_updated_vw_et_images_by_year(download_folder: str = r"D:\vw_et_update_2023",
-											field_boundaries: Optional[dict[str: str]] = None) -> None:
-	if field_boundaries is None:
-		field_boundaries = field_boundaries_by_year
+											field_boundaries: dict[str: str] = field_boundaries_by_year) -> None:
 
 	exports_by_year = {}
 
