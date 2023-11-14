@@ -4,10 +4,10 @@ import ee
 ee.Initialize()
 
 
-def get_days(month, year):
+def get_days(input_month: str, input_year: int) -> int:
 	days = {
 		'01': 31,
-		'02': 28 if not year == 2020 else 29,
+		'02': 28 if not input_year == 2020 else 29,
 		'03': 31,
 		'04': 30,
 		'05': 31,
@@ -20,7 +20,7 @@ def get_days(month, year):
 		'12': 31
 	}
 
-	return days[month]
+	return days[input_month]
 
 
 years = (2019, 2020, 2021)
