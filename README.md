@@ -1,4 +1,8 @@
-<img src="https://raw.githubusercontent.com/water3d/eedl/release/docs/source/_static/logo/logo_black.png" alt="EEDL Logo">
+<picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/water3d/eedl/release/docs/source/_static/logo/logo_black.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/water3d/eedl/release/docs/source/_static/logo/logo_white.png">
+    <img alt="EEDL Logo" src="https://raw.githubusercontent.com/water3d/eedl/release/docs/source/_static/logo/logo_black.png">
+</picture>
 
 # Earth Engine Downloader
 
