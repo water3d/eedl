@@ -11,8 +11,6 @@ on:
 jobs:
   Version-Check:
       runs-on: ubuntu-latest
-      env:
-        SETUPCFG_VERSION: ''
 
       steps:
       - name: Checkout Repository
