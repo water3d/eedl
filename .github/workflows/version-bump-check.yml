@@ -29,4 +29,4 @@ jobs:
       - name: Check version is increased
         run: |
           python -m pip install requests
-          python -c "import requests;import os;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;version_number=eedl.__version__;setupcfg_version=os.environ.get('SETUPCFG_VERSION');assert (version_number==setupcfg_version and version_number>latest);"
+          python -c "import requests;import re;import os;latest=requests.get('https://pypi.org/pypi/eedl/json').json()['info']['version'];import eedl;version_number=eedl.__version__;setupcfg_version=os.environ.get('SETUPCFG_VERSION');assert (version_number==setupcfg_version and version_number>latest);version_pattern = re.compile(r'^0\.202[1-9]\.(1[0-2]|[1-9])\.(3[01]|[12][0-9]|[1-9])$');assert version_pattern.match(version_number)"
