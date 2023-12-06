@@ -13,7 +13,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set Up Python Ubuntu
         uses: actions/setup-python@v4
@@ -21,12 +21,16 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Get the version number from setup.cfg
+      - name: Get the version number from setup.cfg and __init__.py
         run: |
           setupcfg_version=$(grep -oP 'version\s*=\s*\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' setup.cfg)
           echo "SETUPCFG_VERSION=$setupcfg_version" >> $GITHUB_ENV
 
+          version=$(python3 -c "from eedl import __version__; print(__version__)")
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+
       - name: Check version is increased
         run: |
-          python -m pip install requests
-          python .github/workflows/version_checker.py
+          python3 -m pip install requests
+          python3 ci/version_checker.py
