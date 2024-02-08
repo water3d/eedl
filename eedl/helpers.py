@@ -1,12 +1,31 @@
 import os
 import itertools
 import datetime
+from typing import Optional
 
 from .core import safe_fiona_open
 from .image import EEDLImage, TaskRegistry
 
 import ee
 from ee import ImageCollection
+
+
+class CollectionExtractor():
+	"""
+		This is a simple layer on top of EEDLImage that will export each item in a collection. Importantly, it will attempt
+		to minimize any regridding of the raster by not doing any kind of strict boundary filtering. You can provide
+		a collection filtered to a geometry and then it will export all of the images inside without any kind of clipping.
+		If you choose the same CRS for output as the input, this should avoid regridding the raster.
+	"""
+
+	collection: Optional[ee.ImageCollection] = None
+	collection_band: Optional[str] = None
+	time_start: Optional[str] = None
+	time_end: Optional[str] = None
+	mosaic_by_date: Optional[bool] = True
+	def __init__(self, **kwargs):
+		for kwarg in kwargs:
+			setattr(self, kwarg, kwargs[kwarg])
 
 
 class GroupedCollectionExtractor():
