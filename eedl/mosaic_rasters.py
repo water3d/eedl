@@ -3,7 +3,6 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import Sequence, Union
-
 from osgeo import gdal
 
 
@@ -21,7 +20,7 @@ def mosaic_folder(folder_path: Union[str, Path], output_path: Union[str, Path], 
 	"""
 	tifs = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(".tif") and filename.startswith(prefix)]
 
-	if len(tifs) == 1:  # If we only got one image back, don't both mosaicking, though this will also skip generating overviews.
+	if len(tifs) == 1:  # If we only got one image back, don't bother mosaicking, though this will also skip generating overviews.
 		shutil.move(tifs[0], output_path)  # Just move the output image to the "mosaic" name, then return.
 		return
 
@@ -44,7 +43,7 @@ def mosaic_rasters(raster_paths: Sequence[Union[str, Path]],
 	"""
 
 	# gdal.SetConfigOption("GTIFF_SRC_SOURCE", "GEOKEYS")
-	vrt_path = tempfile.mktemp(suffix=".vrt", prefix="mosaic_rasters_")
+	vrt_path = tempfile.mkstemp(suffix=".vrt", prefix="mosaic_rasters_")
 
 	vrt_options = gdal.BuildVRTOptions(resampleAlg='nearest', resolution="highest")
 	my_vrt = gdal.BuildVRT(vrt_path, raster_paths, options=vrt_options)

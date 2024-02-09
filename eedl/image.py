@@ -81,7 +81,7 @@ class TaskRegistry:
 		self.log_file: Optional[io.TextIOWrapper] = None  # the open log file handle
 		self.raise_errors: bool = True
 
-	def add(self, image: ee.image.Image) -> None:
+	def add(self, image: "EEDLImage") -> None:
 		"""
 		Adds an Earth Engine image to the list of Earth Engine images.
 
@@ -94,7 +94,7 @@ class TaskRegistry:
 		self.images.append(image)
 
 	@property
-	def incomplete_tasks(self) -> List[ee.image.Image]:
+	def incomplete_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have not been completed yet.
 
@@ -108,7 +108,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.INCOMPLETE_STATUSES]
 
 	@property
-	def complete_tasks(self) -> List[ee.image.Image]:
+	def complete_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images.
 
@@ -118,7 +118,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.COMPLETE_STATUSES + self.FAILED_STATUSES]
 
 	@property
-	def failed_tasks(self) -> List[ee.image.Image]:
+	def failed_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have either been cancelled or that have failed
 
@@ -128,7 +128,7 @@ class TaskRegistry:
 		return [image for image in self.images if image.last_task_status['state'] in self.FAILED_STATUSES]
 
 	@property
-	def downloadable_tasks(self) -> List[ee.image.Image]:
+	def downloadable_tasks(self) -> List["EEDLImage"]:
 		"""
 		List of Earth Engine images that have not been cancelled or have failed.
 
@@ -165,9 +165,12 @@ class TaskRegistry:
 
 	def log_error(self, error_type: str, error_message: str):
 		"""
-			:param error_type: Options "ee", "local" to indicate whether it was an error on Earth Engine's side or on
-				the local processing side
-			:param error_message: The error message to print to the log file
+		Args:
+			error_type (str): Options "ee", "local" to indicate whether it was an error on Earth Engine's side or on the local processing side
+			error_message (str): The error message to print to the log file
+
+		Returns:
+			None
 		"""
 		message = f"{error_type} Error: {error_message}"
 		date_string = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -215,7 +218,7 @@ class TaskRegistry:
 				self.download_ready_images(download_location)
 			except OSError:
 				if try_again_disk_full:
-					print("OSError reported. Disk may be full - will try again - clear space")
+					print("OSError reported. Invalid disk or the disk may be full - will try again - clear space")
 					pass
 				else:
 					raise
@@ -223,7 +226,7 @@ class TaskRegistry:
 			time.sleep(sleep_time)
 
 		if len(self.failed_tasks) > 0:
-			message = f"{len(self.failed_tasks)} images failed to export. Example error message from first" \
+			message = f"{len(self.failed_tasks)} image(s) failed to export. Example error message from first" \
 								f" failed image \"{self.failed_tasks[0].last_task_status['description']}\" was" \
 								f" \"{self.failed_tasks[0].last_task_status['error_message']}\"." \
 								f" Check https://code.earthengine.google.com/tasks in your web browser to see status and" \
@@ -370,7 +373,7 @@ class EEDLImage:
 			clip (Optional[ee.geometry.Geometry]): Defines the region of interest for export - does not perform a strict clip, which is often slower.
 				Instead, it uses the Earth Engine export's "region" parameter to clip the results to the bounding box of
 				the clip geometry. To clip to the actual geometry, set strict_clip to True.
-			strict_clip (Optional[bool]: When set to True, performs a true clip on the result so that it's not just the bounding box but also the
+			strict_clip (Optional[bool]): When set to True, performs a true clip on the result so that it's not just the bounding box but also the
 				actual clipping geometry. Defaults to False.
 			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected.
 
@@ -544,12 +547,11 @@ class EEDLImage:
 					report_threshold: int = 1000,
 					write_batch_size: int = 2000,
 					use_points: bool = False,
-					inject_constants: dict = dict(),
+					inject_constants: Optional[dict] = None,
 					nodata_value: int = -9999,
 					all_touched: bool = False
 					) -> None:
 		"""
-
 		Args:
 			polygons (Union[str, Path]):
 			keep_fields (tuple[str, ...]):
@@ -558,10 +560,15 @@ class EEDLImage:
 				Set to None to disable.
 			write_batch_size (int): How many zones should we store up before writing to the disk? Defaults to 2000.
 			use_points (bool):
+			inject_constants(Optional[dict]):
+			nodata_value (int):
+			all_touched (bool):
 
 		Returns:
 			None
 		"""
+		if inject_constants is None:
+			inject_constants = dict()
 
 		self.zonal_output_filepath = zonal.zonal_stats(
 							polygons,
@@ -580,7 +587,7 @@ class EEDLImage:
 
 	def _check_task_status(self) -> Dict[str, Union[Dict[str, str], bool]]:
 		"""
-		Updates the status is it needs to be changed
+		Updates the status if it needs to be changed
 
 		Returns:
 			Dict[str, Union[Dict[str, str], bool]]: Returns a dictionary of the most up-to-date status and whether that status was changed
