@@ -42,9 +42,11 @@ class GroupedCollectionExtractor():
 
 		You'll need to pay special attention to the parameters to the initialization function.
 
-		Args:
-			skip_existing (bool):
-			keep_image_objects (bool): Whether to store the EEDLImage objects as part of this class, so they can be
+		Attributes:
+			on_error (str, "log"): What to do when an error occurs. Options are "log", which writes it to string and disk,
+				and "raise" which raises the error as an exception and stops execution of the class.
+			skip_existing (bool, True):
+			keep_image_objects (bool, False): Whether to store the EEDLImage objects as part of this class, so they can be
 				accessed when it's done. We don't just to not use the RAM on large exports. This does *not* specify
 				anything about whether the image data is written to disk - that happens automatically and by default
 	"""
