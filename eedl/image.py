@@ -194,13 +194,19 @@ class TaskRegistry:
 						try_again_disk_full: bool = True,
 						on_failure: str = "log") -> None:
 		"""
-		Blocker until there are no more incomplete or downloadable tasks left.
+		Tells EEDL to wait until there are no more incomplete or downloadable tasks left. It will block execution
+		of any following code until all images have been downloaded and processed. Any code that runs afterward
+		can rely on the images being downloaded to disk.
 
 		Args:
 			download_location (Union[str, Path]): Destination for downloaded files.
-			sleep_time (int): Time between checking if the disk is full in seconds. Defaults to 10 seconds.
-			callback (Optional[str]): Optional callback function. Executed after image has been downloaded.
-			try_again_disk_full (bool): Will continuously retry to download images that are ready if disk is full.
+			sleep_time (int): Time between checking if downloads are available (complete) in seconds. Defaults to 10 seconds.
+				This is also the interval where task statuses are updated on image objects.
+			callback (Optional[str]): Optional callback function. Executed after image has been downloaded and allows for
+				processing of completed images even while waiting for other images to complete on Earth Engine's servers.
+			try_again_disk_full (bool): Will continuously retry to download images that are ready, even if it fails to
+				do so initially because the disk is full. This allows you to get the warning that the disk is full, then
+				clear out space to allow processing to complete, without restarting the exports or processing.
 			on_failure (str): ***Needs language***
 
 		Returns:
@@ -242,7 +248,7 @@ main_task_registry = TaskRegistry()
 
 class EEDLImage:
 	"""
-	The main class that does all the work. Any use of this package should instantiate this class for each export
+	The main class that does all the work. Any use of this package ultimately instantiates this class for each export
 	the user wants to do. As we refine this, we may be able to provide just a single function in this module named
 	"export" or something of that sort for people who don't need access to control class behavior. That will likely
 	follow all the other enhancements, like converting the exports into async code.
@@ -334,7 +340,17 @@ class EEDLImage:
 	@property
 	def last_task_status(self) -> Dict[str, str]:
 		"""
-		Allows reading the private variable "_last_task_status"
+		Returns the status of the image's task on Earth Engine's servers, as last reported when it was checked.
+		Calling this method does not re-check the task status. Instead, those checks are scheduled via the
+		TaskRegistry and stored for access here.
+
+		The task status reported by Earth Engine comes back as a dictionary, which is what is stored here. We pay the most attention
+		to the "STATE" key, which indicates where processing of the export is in the lifecycle. See
+		https://developers.google.com/earth-engine/guides/processing_environments#task_lifecycle
+		for more information on task lifecycles and possible values.
+
+		The following document from Earth Engine further has an example with the full set of keys and
+		example values for a task status dictionary: https://developers.google.com/earth-engine/guides/python_install#create-an-export-task:
 
 		Returns:
 		Dict[str, str]: Return the private variable "_last_task_status"

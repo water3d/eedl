@@ -2,7 +2,8 @@
 Working with EEDL
 ======================
 
-Currently EEDL can only be installed from the `GitHub repository`_. Distribution through PyPI (i.e. via pip) and Conda Forge are coming soon.
+Currently EEDL can be installed from the `GitHub repository`_ or via PyPI (i.e. via pip). Distribution
+via Conda Forge may come in the future.
 
 .. _GitHub repository: https://github.com/water3d/eedl/
 

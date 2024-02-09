@@ -12,6 +12,16 @@ eedl.image module
    :undoc-members:
    :show-inheritance:
 
+
+eedl.helpers module
+-------------------------
+
+.. automodule:: eedl.helpers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 eedl.merge module
 -----------------
 
@@ -43,3 +53,4 @@ eedl.google\_cloud module
    :members:
    :undoc-members:
    :show-inheritance:
+

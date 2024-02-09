@@ -23,12 +23,31 @@ class CollectionExtractor():
 	time_start: Optional[str] = None
 	time_end: Optional[str] = None
 	mosaic_by_date: Optional[bool] = True
+
 	def __init__(self, **kwargs):
 		for kwarg in kwargs:
 			setattr(self, kwarg, kwargs[kwarg])
 
 
 class GroupedCollectionExtractor():
+	"""
+		The GroupedCollectionExtractor is currently the most powerful tool in the package, though it has some
+		limits based on its assumptions.
+
+		Using this class for an export allows you to provide spatial data (as polygons) indicating regions
+		of interest (ROIs), as well as a separate set of spatial data indicating the polygons to extract data for
+		within each ROI. With that information, the class will export every image from a collection within
+		the date range you provide, clipped to each ROI, then obtain zonal statistics for the polygons within
+		each ROI.
+
+		You'll need to pay special attention to the parameters to the initialization function.
+
+		Args:
+			skip_existing (bool):
+			keep_image_objects (bool): Whether to store the EEDLImage objects as part of this class, so they can be
+				accessed when it's done. We don't just to not use the RAM on large exports. This does *not* specify
+				anything about whether the image data is written to disk - that happens automatically and by default
+	"""
 
 	def __init__(self, **kwargs):
 		self.keep_image_objects = False  # Whether to store the EEDLImage objects on this class, so they can be accessed when it's done. We don't just to not use the RAM on large exports.
