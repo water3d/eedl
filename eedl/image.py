@@ -254,10 +254,15 @@ class EEDLImage:
 	follow all the other enhancements, like converting the exports into async code.
 
 	The class has no required arguments as of 6/16/2023, but that may change. Any arguments provided get applied
-	directly to the class and override any defaults. Options include:
+	directly to the class and override any defaults. It may be good to set :code:`crs` and :code:`scale` here
+	to make sure they are set correctly for the images you plan to export, but those can
+	also be provided as kwargs to the :code:`.export` method.
+
+	Options at class instantiation include:
 
 	Args:
-		crs (Optional[str]): Coordinate Reference System to use for exports in a format Earth Engine understands, such as "EPSG:3310"
+		crs (Optional[str]): Coordinate Reference System to use for exports in a format Earth Engine understands,
+		scale (Optional[int]): Scale parameter to pass to Earth Engine for export. Defaults to 30
 		tile_size (Optional[int]): The number of pixels per side of tiles to export
 		export_folder (Optional[Union[str, Path]]): The name of the folder in the chosen export location that will be created for the export
 	"""
@@ -382,6 +387,22 @@ class EEDLImage:
 		"""
 		Handles the exporting of an image.
 
+		Determines the values to provide to tile and export the image, then calls Earth Engine's
+		image export functionality, creates an export task, and starts the task running. Importantly,
+		this code *does not* wait for the task to finish exporting, or do any downloading of the image.
+		It just starts the export process on EE's servers in a way that can be tracked later. This is by design
+		because if you want to export many images, what is most efficient is to start all of the image
+		tasks, and then wait for all of them at once.
+
+		The :code:`drive_root_folder` parameter must be set if :code:`export_type` is :code:`drive`, but is optional
+		when :code:`export_type` is :code:`cloud`. When :code:`export_type` is :code:`cloud` you must provide
+		the name of the Google Cloud storage bucket to export to in the :code:`bucket` parameter. Both export
+		types have configuration requirements and limitations discussed in :ref:`ExportLocations`.
+
+		Note that this method returns None - if you wish to save an object for tracking and to
+		obtain the path to the mosaicked image after everything is downloaded, keep the whole class
+		object (or save it into a list, etc).
+
 		Args:
 			image (ee.image.Image): Image for export.
 			filename_suffix (str): The unique identifier used internally to identify images.
@@ -391,8 +412,12 @@ class EEDLImage:
 				the clip geometry. To clip to the actual geometry, set strict_clip to True.
 			strict_clip (Optional[bool]): When set to True, performs a true clip on the result so that it's not just the bounding box but also the
 				actual clipping geometry. Defaults to False.
-			drive_root_folder (Optional[Union[str, Path]]): The folder for exporting if "drive" is selected.
-
+			drive_root_folder (Optional[Union[str, Path]]): The folder on your computer that has the root of your
+				Google Drive installation (e.g. :code:`G:\\My Drive` on Windows) if "drive" is the provided export type.
+			bucket (Optional[str]): The Google Cloud bucket to place the exported images into if using the `cloud` export_type.
+			export_kwargs (Unpack[EExportDict]): An optional dictionary of keyword arguments that gets passed directly to
+				Earth Engine's image export method. Overrides any values EEDL manually calculates, if a key is set here
+				that is also set elsewhere (such as on the class or derived in the method).
 		Returns:
 			None
 		"""
