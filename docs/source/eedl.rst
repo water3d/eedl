@@ -4,6 +4,8 @@ EEDL Full API Reference
 Submodules
 ----------
 
+.. _EEDLImage:
+
 eedl.image module
 -----------------
 
