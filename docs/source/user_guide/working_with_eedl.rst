@@ -11,7 +11,6 @@ via Conda Forge may come in the future.
     :maxdepth: 2
     :caption: Section Contents
 
-    getting_started
     workflows_and_concepts
     export_locations
     general_tips

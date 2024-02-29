@@ -1,3 +1,5 @@
+.. _GettingStarted:
+
 Getting Started with EEDL
 ============================
 
@@ -76,5 +78,5 @@ Note the main points of configuration in this example:
 
  * Creation of the image object: As stated above, here you can customize your image to any valid Earth Engine image - no need to save it out as an asset or into a collection first
  * When creating the EEDLImage object - The example above shows no arguments, but you can pass in information, such as CRS information, tiling parameters, and configuration options for running zonal statistics, here. You may want to adjust tiling parameters for multi-band exports, for example, since those can run into Earth Engine's per-tile limits more easily. See documentation for :ref:`EEDLImage` for more information on arguments to the class.
- * When triggering the export: When running the export, you can specify where
- * And when waiting for images
+ * When triggering the export: When running the export, you can specify image name information, as well as provide overrides for some class defaults. Additionally, you can provide any valid keyword argument to Earth Engine's export methods directly as keywords to the EEDLImage :code:`export` method and they'll be passed directly through to Earth Engine.
+ * And when waiting for images: The main points of configuration to set up when waiting are around where to save images on your device, how to handle errors encountered while processing images, how long to wait between polls of the Earth Engine image status endpoints, and whether to run a callback - a method on the EEDLImage class that does postprocessing. Callbacks are helpful because they make EEDL do work on images it has already downloaded while it waits for Earth Engine to export any remaining images. The end result is that your total processing time shouldn't be much longer than Earth Engine's total export time in most cases, even for hundreds of exports. The primary callback to access EEDL's functionality is just the :code:`mosaic` method, but there is also a :code:`mosaic_and_zonal` method that will mosaic the image then run zonal stats. Note that :code:`mosaic_and_zonal` requires that you provide additional configuration parameters when initializing :code:`EEDLImage`, but :code:`mosaic` can run without additional configuration.
