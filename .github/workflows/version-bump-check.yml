@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-python@v4
         if: matrix.os ==  'ubuntu-latest'
         with:
-          python-version: 3.11
+          python-version: "3.x"
 
       - name: Get the version number from setup.cfg and __init__.py
         run: |
