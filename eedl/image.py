@@ -258,6 +258,10 @@ class EEDLImage:
 	to make sure they are set correctly for the images you plan to export, but those can
 	also be provided as kwargs to the :code:`.export` method.
 
+	Note that in the arguments below, the ones prefixed by zonal are only used if you configure the :code:`mosaic_and_zonal`
+	callback on the TaskRegistry. Otherwise, when calling the :code:`zonal_stats` method, you need to provide the parameters
+	there.
+
 	Options at class instantiation include:
 
 	Args:
@@ -265,6 +269,26 @@ class EEDLImage:
 		scale (Optional[int]): Scale parameter to pass to Earth Engine for export. Defaults to 30
 		tile_size (Optional[int]): The number of pixels per side of tiles to export
 		export_folder (Optional[Union[str, Path]]): The name of the folder in the chosen export location that will be created for the export
+		cloud_bucket (Optional[str]): The name of the Google Cloud storage bucket to use for exports - setting this parameter doesn't automatically configure output to the bucket. When running :code:`.export` your also need to specify a cloud export (instead of a `drive` export)
+		output_folder (Optional[Union[str, Path]]): The folder, local to your system running the code, to export the finished images and optional zonal statistics files to.
+		zonal_polygons: Optional[Union[str, Path]]: The path to a fiona-compatible polygon vector data file (e.g. a shapefile, geopackage layer, or other). Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_stats_to_calc: Optional[Tuple]: Tuple of zonal statistics to calculate. For example :code:`('min', 'max', 'mean')`. See the `documentation
+			for the rasterstats package <https://pythonhosted.org/rasterstats/>`_ for full options. Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_keep_fields: Optional[Tuple]: Which fields should be preserved (passed through) from the spatial input data to the output zonal data.
+			You will want to at least define the row's ID/key value here (in a tuple, such as :code:`('ID',)` so you can join the zonal stats
+			back to spatial data, but you can optionally include any other fields as well. Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_use_points: bool: Switch rasterstats to extract using gen_point_query instead of gen_zonal_stats. See rasterstats
+			package documentation for complete information. Get_point_query will get the values of a raster at all vertex
+			locations when provided with a polygon or line. If provided points, it will extract those point values. We set
+			interpolation to the nearest to perform an exact extraction of the cell values. In this codebase's usage, it's
+			assumed that the "features" parameter to this function will be a points dataset (still in the same CRS as the raster)
+			when use_points is True. Additionally, when this is True, the `stats` argument to this function is ignored
+			as only a single value will be extracted as the attribute `value` in the output CSV. Default is False.
+			Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_output_filepath: Optional[Union[str, Path]]:  Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_inject_constants: dict:  Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_nodata_value: int:  Only used with the :code:`mosaic_and_zonal` callback. See note above.
+		zonal_all_touched: bool:  Only used with the :code:`mosaic_and_zonal` callback. See note above.
 	"""
 
 	def __init__(self, **kwargs) -> None:
@@ -401,7 +425,7 @@ class EEDLImage:
 
 		Note that this method returns None - if you wish to save an object for tracking and to
 		obtain the path to the mosaicked image after everything is downloaded, keep the whole class
-		object (or save it into a list, etc).
+		instance object (or save it into a list, etc).
 
 		Args:
 			image (ee.image.Image): Image for export.
@@ -511,6 +535,10 @@ class EEDLImage:
 	def download_results(self, download_location: Union[str, Path], callback: Optional[str] = None, drive_wait: int = 15) -> None:
 		"""
 
+		Handles the download and optional postprocessing of the current image to the folder specified :code:`download_location`.
+		Users of EEDL won't need to invoke this except in very advanced situations. The Task Registry automatically
+		invokes this method when it detects that the image has completed exporting.
+
 		Args:
 			download_location (Union[str, Path]): The directory where the results should be downloaded to. Expects a string path or a Pathlib Path object.
 			callback (Optional[str]): The callback function is called once the image has been downloaded.
@@ -547,7 +575,13 @@ class EEDLImage:
 
 	def mosaic(self) -> None:
 		"""
-		Mosaics the individual images into the full image
+		Mosaics the individual pieces of the image into the complete image.
+
+		EEDL works by configuring Earth Engine to tile large exports - while Earth Engine has limits on individual image
+		sizes for export, it can slice large images into tiles so that each individual image fits within those limits.
+		EEDL sets Earth Engine to tile exports, then tracks the individual pieces (whether one or thousands) through
+		downloading. In this function, it then mosaics those pieces back into one image you can use locally, so you
+		don't need to handle the individual tiles (and all of their edges).
 
 		Returns:
 			None
@@ -557,9 +591,11 @@ class EEDLImage:
 
 	def mosaic_and_zonal(self) -> None:
 		"""
-			A callback that takes no parameters, but runs mosaic and zonal stats. Runs zonal stats
+			A callback that takes no parameters, but runs both the mosaic and zonal stats methods. Runs zonal stats
 			by allowing the user to set all the zonal params on the class instance instead of passing
-			them as params
+			them as params. Users of EEDL *could* invoke this, but it's really designed to be
+			invoked via a callback on the Task Registry, and for any prior code to configure
+			the zonal statistics extractions.
 		"""
 
 		if not (self.zonal_polygons and self.zonal_keep_fields and self.zonal_stats_to_calc):
