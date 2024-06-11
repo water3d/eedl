@@ -6,6 +6,24 @@ What is EEDL?
 EEDL provides simple functionality to download small or large volumes of data from Earth Engine. It combines the functionality
 several packages into one, making eedl easier and more stream-lined than working with many individual components to download data from Earth Engine.
 
+Required Access and Configuration
+------------------------------------
+In addition to installing the Python package for EEDL (below), EEDL requires the following:
+
+1. An Earth Engine Account:
+    You need to have an active account on Google Earth Engine.
+2. You need to authenticate your Earth Engine account in the copy of Python you use for EEDL
+    EEDL will attempt to detect that Earth Engine isn't authenticated and start the sign-in flow,
+    but you may find it easier to handle manually before running EEDL for the first time. See
+    the `Earth Engine documentation on auth <https://developers.google.com/earth-engine/guides/auth>`_ for more.
+    EEDL will install the Earth Engine client for you though - no need to install it separately, but you
+    will need to authenticate it after installing EEDL if you have not already done so.
+3. Either a Google Cloud Storage bucket in the same Google Account, configured for public reads *or* the Google Drive client installed on the same device as EEDL.
+    EEDL tracks and downloads pieces of your images through the export process, but it can currently still only use
+    the options Earth Engine has available for exports - that is, Earth Engine can export to Google Cloud Storage buckets,
+    or to Google Drive. See our `documentation on export locations <ExportLocations>`_ for more considerations, but you need at least one
+    of these items in order to use EEDL.
+
 How to install EEDL
 -----------------------
 The package is still in development and we have not yet published to PyPI (pip) or conda, but have built infrastructure
